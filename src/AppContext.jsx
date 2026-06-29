@@ -27,11 +27,34 @@ export function AppProvider({ children }) {
     return unsub;
   }, []);
 
+  const [faceStats, setFaceStats] = useState(null);  // { smiles, gazeRate }
+
+  // 면접 1회분 — 질문 생성 응답 보관 (sessionId·questions[])
+  const [session, setSession] = useState(null);
+  // { sessionId, jobName, questionType, questions:[{id,orderNo,content}] }
+
+  // 면접 화면이 모은 답변 (Loading이 채점 API에 넘김)
+  const [answers, setAnswers] = useState([]);
+
+  // 답변 평가 응답 누적 (Result 화면에서 표시)
+  const [feedbacks, setFeedbacks] = useState([]);
+
   const value = {
     studentId, user, authReady,
     mode, setMode,
     config, setConfig,
-    logout: async () => { await logOut(); setConfig(null); },
+    faceStats, setFaceStats,
+    session, setSession,
+    answers, setAnswers,
+    feedbacks, setFeedbacks,
+    logout: async () => {
+      await logOut();
+      setConfig(null);
+      setSession(null);
+      setAnswers([]);
+      setFeedbacks([]);
+      setFaceStats(null);
+    },
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

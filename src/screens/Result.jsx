@@ -14,12 +14,43 @@ function stageFor(score) {
   return 0;
 }
 
+/* 받아온 피드백을 화면 공통 형태로 정규화.
+   - score: 숫자
+   - strengths/improvements: 배열 보장
+   - suggestion: 문자열
+   feedbacks가 비어있으면(직접 진입 등) 더미로 폴백 */
+function normalize(feedbacks, session) {
+  const qTexts = session?.questions?.map((q) => q.content) || QUESTIONS;
+  if (!feedbacks || feedbacks.length === 0) {
+    return {
+      score: FEEDBACK.score,
+      perQ: FEEDBACK.perQ.map((p, i) => ({
+        question: qTexts[i],
+        score: p.score,
+        strengths: [p.strength],
+        improvements: [p.improve],
+        suggestion: p.suggest,
+      })),
+    };
+  }
+  const perQ = feedbacks.map((f, i) => ({
+    question: qTexts[i],
+    score: f.score ?? 0,
+    strengths: Array.isArray(f.strengths) ? f.strengths : [f.strengths].filter(Boolean),
+    improvements: Array.isArray(f.improvements) ? f.improvements : [f.improvements].filter(Boolean),
+    suggestion: f.suggestion || "",
+  }));
+  const avg = Math.round(perQ.reduce((s, p) => s + p.score, 0) / perQ.length);
+  return { score: avg, perQ };
+}
+
 export default function Result() {
   const navigate = useNavigate();
-  const { config } = useApp();
+  const { config, faceStats, feedbacks, session } = useApp();
   const [sel, setSel] = useState(0);
-  const q = FEEDBACK.perQ[sel];
 
+  const data = normalize(feedbacks, session);
+  const q = data.perQ[sel];
   return (
     <Shell>
       <TopBar />
@@ -39,12 +70,12 @@ export default function Result() {
             </div>
             <div style={{ marginTop: 12 }}><Eyebrow>Total score</Eyebrow></div>
             <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: "-0.04em", color: T.forest, lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>
-              {FEEDBACK.score}
+              {data.score}
             </div>
             <div style={{ fontSize: 12.5, color: T.inkSoft }}>100점 만점</div>
           </Card>
           <Card style={{ padding: 8 }}>
-            {FEEDBACK.perQ.map((p, i) => (
+            {data.perQ.map((p, i) => (
               <button key={i} onClick={() => setSel(i)} style={{
                 width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
                 padding: "11px 13px", borderRadius: 9, cursor: "pointer", border: "none",
@@ -59,6 +90,25 @@ export default function Result() {
               </button>
             ))}
           </Card>
+
+          {/* 표정·응시 분석 */}
+          {faceStats && (
+            <Card style={{ padding: "18px 18px 16px" }}>
+              <Eyebrow>Presence</Eyebrow>
+              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+                <PresenceRow
+                  label="표정"
+                  value={`${faceStats.smiles}회`}
+                  desc={`면접 내내 ${faceStats.smiles}번 미소지었어요`}
+                />
+                <PresenceRow
+                  label="응시"
+                  value={`${faceStats.gazeRate}%`}
+                  desc={`카메라를 ${faceStats.gazeRate}% 응시했어요`}
+                />
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* 우 */}
@@ -67,11 +117,11 @@ export default function Result() {
             <Eyebrow>Question {String(sel + 1).padStart(2, "0")}</Eyebrow>
             <span style={{ fontSize: 24, fontWeight: 800, color: T.forest, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{q.score}<span style={{ fontSize: 13, color: T.inkSoft, fontWeight: 600 }}> /100</span></span>
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.ink, lineHeight: 1.5, letterSpacing: "-0.01em", margin: "4px 0 22px" }}>{QUESTIONS[sel]}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.ink, lineHeight: 1.5, letterSpacing: "-0.01em", margin: "4px 0 22px" }}>{q.question}</h2>
 
-          <FbBlock label="잘한 점" accent={T.forest} text={q.strength} />
-          <FbBlock label="개선할 점" accent={T.amber} text={q.improve} />
-          <FbBlock label="추천 답변 방향" accent={T.sage} text={q.suggest} />
+          <FbBlock label="잘한 점" accent={T.forest} items={q.strengths} />
+          <FbBlock label="개선할 점" accent={T.amber} items={q.improvements} />
+          <FbBlock label="추천 답변 방향" accent={T.sage} items={[q.suggestion]} />
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
             <Btn variant="outline" onClick={() => navigate("/mypage")}><Icon.chart size={17} /> 성장 기록</Btn>
@@ -85,13 +135,26 @@ export default function Result() {
   );
 }
 
-function FbBlock({ label, accent, text }) {
+function FbBlock({ label, accent, items }) {
+  const list = (items || []).filter(Boolean);
+  if (list.length === 0) return null;
   return (
     <div style={{ display: "flex", gap: 13, padding: "12px 0", borderTop: `1px solid ${T.line}` }}>
       <div style={{ flex: "0 0 3px", borderRadius: 3, background: accent, alignSelf: "stretch" }} />
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 3, letterSpacing: "-0.01em" }}>{label}</div>
-        <div style={{ fontSize: 14, color: T.inkMid, lineHeight: 1.65 }}>{text}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 5, letterSpacing: "-0.01em" }}>{label}</div>
+        {list.length === 1 ? (
+          <div style={{ fontSize: 14, color: T.inkMid, lineHeight: 1.65 }}>{list[0]}</div>
+        ) : (
+          <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+            {list.map((t, i) => (
+              <li key={i} style={{ fontSize: 14, color: T.inkMid, lineHeight: 1.6, display: "flex", gap: 8 }}>
+                <span style={{ color: accent, flex: "0 0 auto", marginTop: 1 }}>·</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

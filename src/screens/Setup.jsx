@@ -5,17 +5,32 @@ import { Card, Chip, Btn, Section, Eyebrow } from "../components/UI";
 import { Icon } from "../components/Characters";
 import { Shell, TopBar } from "../components/Layout";
 import { useApp } from "../AppContext";
+import { createQuestions } from "../api";
 
 export default function Setup() {
   const navigate = useNavigate();
-  const { mode, setConfig } = useApp();
+  const { mode, setConfig, setSession, setFeedbacks, setFaceStats } = useApp();
   const [job, setJob] = useState(null);
   const [qtype, setQtype] = useState(null);
   const [itype, setItype] = useState(null);
+  const [loading, setLoading] = useState(false);
   const ready = job && qtype && itype;
-  const onStart = () => {
+
+  const onStart = async () => {
+    if (loading) return;
+    setLoading(true);
     setConfig({ job, qtype, itype });
-    navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
+    // 새 면접 시작이니 이전 면접 결과·표정 통계 초기화
+    setFeedbacks([]);
+    setFaceStats(null);
+    try {
+      const data = await createQuestions(job, qtype);  // API 호출 (실패 시 더미 폴백)
+      setSession(data);  // { sessionId, questions[] } 보관
+      navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
+    } catch (e) {
+      console.error("[Setup] 질문 생성 오류:", e);
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,8 +73,8 @@ export default function Setup() {
           }}>
             {ready ? `${job} · ${qtype} · ${itype}` : "직무와 질문 유형을 선택해주세요"}
           </span>
-          <Btn variant="accent" disabled={!ready} onClick={onStart} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
-            면접 시작 <Icon.arrow size={18} />
+          <Btn variant="accent" disabled={!ready || loading} onClick={onStart} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+            {loading ? "질문 준비 중…" : <>면접 시작 <Icon.arrow size={18} /></>}
           </Btn>
         </div>
       </Card>

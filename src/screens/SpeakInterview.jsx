@@ -5,6 +5,7 @@ import { Card, Btn, Eyebrow } from "../components/UI";
 import { Icon } from "../components/Characters";
 import { Shell, TopBar, Progress, Timer, useTimer } from "../components/Layout";
 import { useApp } from "../AppContext";
+import { useFaceAnalysis } from "../components/useFaceAnalysis";
 
 /* 브라우저 음성 인식 지원 여부 */
 const SR = typeof window !== "undefined"
@@ -13,22 +14,31 @@ const SR = typeof window !== "undefined"
 
 export default function SpeakInterview() {
   const navigate = useNavigate();
-  const { config } = useApp();
+  const { config, session, setFaceStats, setAnswers: setSessionAnswers } = useApp();
+
+  // 받아온 질문 (없으면 더미 폴백)
+  const qList = session?.questions || QUESTIONS.map((content, i) => ({ id: null, content }));
+  const questions = qList.map((q) => q.content);
+  const total = questions.length;
+
   const [idx, setIdx] = useState(0);
   const [recording, setRecording] = useState(false);
-  const [recorded, setRecorded] = useState(Array(5).fill(false));
-  const [texts, setTexts] = useState(Array(5).fill(""));
+  const [recorded, setRecorded] = useState(Array(total).fill(false));
+  const [texts, setTexts] = useState(Array(total).fill(""));
   const [interim, setInterim] = useState("");
   const [camReady, setCamReady] = useState(false);
   const [error, setError] = useState("");
   const [sec, reset] = useTimer(recording);
-  const last = idx === 4;
+  const last = idx === total - 1;
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const recogRef = useRef(null);
   const finalRef = useRef("");
-  const camIdRef = useRef(null);   // ← 컴포넌트 상단 useRef들 옆에 추가해줘
+  const camIdRef = useRef(null);
+
+  // 얼굴 분석 — recording 동안만 동작 (videoRef·recording 선언 이후에 위치해야 함)
+  const { stats: faceStats, resetStats } = useFaceAnalysis(videoRef, recording);
 
   const startCamera = async () => {
     if (streamRef.current) { console.log("[cam] 이미 켜짐"); return; }
@@ -89,6 +99,8 @@ export default function SpeakInterview() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
   }, []);
 
+  useEffect(() => { resetStats(); }, []);
+
   /* 음성 인식기 */
   const buildRecognizer = () => {
     if (!SR) return null;
@@ -132,6 +144,8 @@ export default function SpeakInterview() {
     stopCamera();
     setRecording(false);
     setInterim("");
+    // 세션 누적값을 전역에 갱신 (질문마다 갱신해도 누적이라 계속 커짐)
+    setFaceStats(faceStats);
     const r = [...recorded]; r[idx] = true; setRecorded(r);
   };
 
@@ -149,8 +163,20 @@ export default function SpeakInterview() {
   const next = () => {
     if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
     stopCamera();
-    if (last) navigate("/loading");
-    else { setIdx(idx + 1); reset(); setRecording(false); setInterim(""); finalRef.current = ""; }
+    if (last) {
+      setFaceStats(faceStats);  // 최종 누적 확정
+      // 답변 묶음 전역 저장 (질문 id·내용과 함께)
+      setSessionAnswers(
+        qList.map((q, i) => ({
+          questionId: q.id,
+          question: q.content,
+          answer: texts[i] || "",
+        }))
+      );
+      navigate("/loading");
+    } else {
+      setIdx(idx + 1); reset(); setRecording(false); setInterim(""); finalRef.current = "";
+    }
   };
 
   const shown = (texts[idx] + " " + interim).trim();
@@ -168,7 +194,7 @@ export default function SpeakInterview() {
       <Card style={{ marginTop: 22, padding: 30, textAlign: "center" }}>
         <Eyebrow>Question {String(idx + 1).padStart(2, "0")}</Eyebrow>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: T.ink, lineHeight: 1.45, letterSpacing: "-0.02em", margin: "10px 0 26px" }}>
-          {QUESTIONS[idx]}
+          {questions[idx]}
         </h2>
 
         {/* 카메라 프리뷰 — video는 항상 렌더, placeholder는 위에 겹쳐서 표시 */}
@@ -203,6 +229,18 @@ export default function SpeakInterview() {
               color: "#fff", fontSize: 11.5, fontWeight: 700,
             }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} /> REC
+            </span>
+          )}
+          {/* 실시간 표정·응시 통계 */}
+          {recording && (
+            <span style={{
+              position: "absolute", top: 10, right: 10, zIndex: 2,
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "4px 10px", borderRadius: 20, background: "rgba(0,0,0,.45)",
+              color: "#fff", fontSize: 11, fontWeight: 600,
+            }}>
+              <span>😊 웃음 {faceStats.smiles}</span>
+              <span>👁 응시 {faceStats.gazeRate}%</span>
             </span>
           )}
         </div>

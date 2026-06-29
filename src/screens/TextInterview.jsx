@@ -8,16 +8,33 @@ import { useApp } from "../AppContext";
 
 export default function TextInterview() {
   const navigate = useNavigate();
-  const { config } = useApp();
+  const { config, session, setAnswers: setSessionAnswers } = useApp();
+
+  const qList = session?.questions || QUESTIONS.map((content, i) => ({ id: null, content }));
+  const questions = qList.map((q) => q.content);
+  const total = questions.length;
+
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState(Array(5).fill(""));
+  const [answers, setAnswers] = useState(Array(total).fill(""));
   const [running, setRunning] = useState(true);
   const [sec] = useTimer(running);
-  const last = idx === 4;
+  const last = idx === total - 1;
 
   const setAns = (v) => { const a = [...answers]; a[idx] = v; setAnswers(a); };
-  const next = () => { if (last) { setRunning(false); navigate("/loading"); } else setIdx(idx + 1); };
 
+  const submit = () => {
+    // 화면 로컬 답변 → 전역으로 (질문 id·내용과 묶어서)
+    const payload = qList.map((q, i) => ({
+      questionId: q.id,
+      question: q.content,
+      answer: answers[i] || "",
+    }));
+    setSessionAnswers(payload);
+    setRunning(false);
+    navigate("/loading");
+  };
+
+  const next = () => { if (last) submit(); else setIdx(idx + 1); };
   return (
     <Shell>
       <TopBar />
@@ -31,7 +48,7 @@ export default function TextInterview() {
       <Card style={{ marginTop: 22, padding: 30 }}>
         <Eyebrow>Question {String(idx + 1).padStart(2, "0")}</Eyebrow>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: T.ink, lineHeight: 1.45, letterSpacing: "-0.02em", margin: "10px 0 22px" }}>
-          {QUESTIONS[idx]}
+          {questions[idx]}
         </h2>
         <textarea
           value={answers[idx]}

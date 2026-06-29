@@ -1,16 +1,61 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { T } from "../styles/tokens";
+import { T, QTYPE_MAP } from "../styles/tokens";
+import { evaluateAnswer } from "../api";
 import { Sprout } from "../components/Characters";
 import { Centered } from "../components/Layout";
+import { useApp } from "../AppContext";
 
 export default function Loading() {
   const navigate = useNavigate();
+  const { mode, config, session, answers, faceStats, setFeedbacks } = useApp();
+  const ranRef = useRef(false);  // StrictMode 이중 실행 방지
+
   useEffect(() => {
-    // 채점 API 응답을 기다리는 자리 (지금은 더미 딜레이)
-    const t = setTimeout(() => navigate("/result", { replace: true }), 1900);
-    return () => clearTimeout(t);
-  }, [navigate]);
+    if (ranRef.current) return;
+    ranRef.current = true;
+
+    (async () => {
+      // 답변이 없으면(직접 진입 등) 더미로 빠지게 그냥 결과로
+      if (!answers || answers.length === 0) {
+        navigate("/result", { replace: true });
+        return;
+      }
+
+      // 화면 표기 → 명세서 Enum (없으면 그대로)
+      const questionType = QTYPE_MAP[config?.qtype] || config?.qtype;
+
+      // 스피킹만 카메라 지표 첨부 (gazeRate 0~100 → 0~1 변환)
+      const extra =
+        mode === "speaking" && session?.sessionId != null
+          ? {
+              sessionId: session.sessionId,
+              smileCount: faceStats?.smiles ?? 0,
+              eyeContactRatio: (faceStats?.gazeRate ?? 0) / 100,
+            }
+          : undefined;
+
+      try {
+        const results = await Promise.all(
+          answers.map((a) =>
+            evaluateAnswer({
+              questionId: a.questionId,
+              question: a.question,
+              answer: a.answer,
+              questionType,
+              extra,
+            })
+          )
+        );
+        setFeedbacks(results);
+      } catch (e) {
+        // evaluateAnswer 내부에서 이미 더미 폴백하므로 여기 거의 안 옴
+        console.warn("[loading] 채점 실패:", e.message);
+        setFeedbacks([]);
+      }
+      navigate("/result", { replace: true });
+    })();
+  }, []);  // 마운트 시 1회
 
   return (
     <Centered>
