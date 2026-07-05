@@ -1,63 +1,74 @@
-/* ============================================================
-   인증 헬퍼 — 학번 기반 로그인을 Firebase(이메일/비번)에 매핑
-   학번 20201234 → 20201234@sprout.app 가짜 이메일로 변환
-   ============================================================ */
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-} from "firebase/auth";
-import { auth } from "./firebase";
+/*  ============================================================
+   인증 헬퍼 — Firebase 대신 MySQL 백엔드 API 사용
+  ============================================================ */
 
-/* 학번을 Firebase용 가짜 이메일로 */
-const EMAIL_DOMAIN = "sprout.app";
-export function studentIdToEmail(studentId) {
-  return `${String(studentId).trim()}@${EMAIL_DOMAIN}`;
-}
-/* 반대로, 이메일에서 학번만 뽑기 (로그인 상태 복원 시 사용) */
-export function emailToStudentId(email) {
-  return email ? email.split("@")[0] : "";
-}
+const BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-/* 회원가입 — 학번 + 비번 (+ 이름은 displayName으로 저장) */
-export async function signUp({ studentId, password, name }) {
-  const email = studentIdToEmail(studentId);
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  if (name) {
-    await updateProfile(cred.user, { displayName: name });
-  }
-  return cred.user;
-}
-
-/* 로그인 — 학번 + 비번 */
+/* 로그인 — 학번 + 비번 → JWT 토큰 발급 */
 export async function signIn({ studentId, password }) {
-  const email = studentIdToEmail(studentId);
-  const cred = await signInWithEmailAndPassword(auth, email, password);
-  return cred.user;
-}
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ studentId, password }),
+  });
 
-/* 로그아웃 */
-export async function logOut() {
-  await signOut(auth);
-}
+  const data = await res.json();
 
-/* Firebase 에러 코드를 한국어 메시지로 */
-export function authErrorMessage(code) {
-  switch (code) {
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "학번 또는 비밀번호가 올바르지 않아요.";
-    case "auth/email-already-in-use":
-      return "이미 가입된 학번이에요. 로그인해주세요.";
-    case "auth/weak-password":
-      return "비밀번호는 6자 이상이어야 해요.";
-    case "auth/too-many-requests":
-      return "잠시 후 다시 시도해주세요.";
-    case "auth/network-request-failed":
-      return "네트워크 연결을 확인해주세요.";
-    default:
-      return "문제가 발생했어요. 다시 시도해주세요.";
+  if (!data.success) {
+    // 백엔드 에러 메시지를 그대로 던짐
+    const err = new Error(data.error || "로그인 실패");
+    err.code = res.status;
+    throw err;
   }
+
+  // 토큰 저장 (새로고침해도 로그인 유지)
+  localStorage.setItem("token", data.data.token);
+  localStorage.setItem("studentId", data.data.user.studentId);
+  localStorage.setItem("userName", data.data.user.name || "");
+
+  return data.data.user;
+}
+
+/* 로그아웃 — 저장된 토큰 삭제 */
+export async function logOut() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("studentId");
+  localStorage.removeItem("userName");
+}
+
+/* 토큰 가져오기 (api.js에서 인증 헤더에 쓸 때) */
+export function getToken() {
+  return localStorage.getItem("token");
+}
+
+/* 저장된 로그인 정보 복원 (새로고침 시) */
+export function getStoredUser() {
+  const token = localStorage.getItem("token");
+  const studentId = localStorage.getItem("studentId");
+  if (!token || !studentId) return null;
+  return { token, studentId, name: localStorage.getItem("userName") || "" };
+}
+
+/* 에러 메시지 — 백엔드가 이미 한국어로 주지만, 혹시 모를 경우 대비 */
+export function authErrorMessage(message) {
+  if (!message) return "문제가 발생했어요. 다시 시도해주세요.";
+  // 네트워크 에러는 백엔드 응답이 없어서 메시지가 다르게 옴
+  if (message.includes("fetch") || message.includes("network") || message.includes("Failed")) {
+    return "네트워크 연결을 확인해주세요.";
+  }
+  // 그 외엔 백엔드가 준 한국어 메시지 그대로 표시
+  return message;
+}
+export async function signUp({ studentId, password, name }) {
+  const res = await fetch(`${BASE}/api/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ studentId, password, name }),
+  });
+  const data = await res.json();
+  if (!data.success) {
+    const err = new Error(data.error || "회원가입 실패");
+    throw err;
+  }
+  return data.data;
 }

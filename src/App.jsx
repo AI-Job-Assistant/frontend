@@ -44,6 +44,7 @@ export default function App() {
         <Route path="/loading" element={<Protected><Loading /></Protected>} />
         <Route path="/result" element={<Protected><Result /></Protected>} />
         <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
+        
 
         {/* 없는 경로는 메인으로 */}
         <Route path="*" element={<Navigate to="/" replace />} />

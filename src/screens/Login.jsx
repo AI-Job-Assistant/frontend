@@ -4,9 +4,11 @@ import { T } from "../styles/tokens";
 import { SproutBadge } from "../components/Characters";
 import { Field, Btn, Eyebrow } from "../components/UI";
 import { signIn, authErrorMessage } from "../auth";
+import { useApp } from "../AppContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setStudentId: _set, user: _u } = useApp(); // authReady 대기 불필요
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -19,11 +21,13 @@ export default function Login() {
       await signIn({ studentId: id, password: pw });
       navigate("/");           // 로그인 성공 → 메인
     } catch (e) {
-      setErr(authErrorMessage(e.code));
+      // Firebase는 e.code, MySQL은 e.message로 에러가 옴
+      setErr(authErrorMessage(e.message));
     } finally {
       setBusy(false);
     }
   };
+
   return (
     <div style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr" }} className="auth-grid">
       {/* 좌: 브랜드 패널 */}
@@ -43,7 +47,7 @@ export default function Login() {
             연습이 기록이 되고, 기록이 성장이 됩니다.
           </p>
         </div>
-        <span />  
+        <span />
       </div>
 
       {/* 우: 폼 */}
