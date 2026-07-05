@@ -52,18 +52,14 @@ export function getStoredUser() {
 /* 에러 메시지 — 백엔드가 이미 한국어로 주지만, 혹시 모를 경우 대비 */
 export function authErrorMessage(message) {
   if (!message) return "문제가 발생했어요. 다시 시도해주세요.";
-  // 네트워크 에러는 백엔드 응답이 없어서 메시지가 다르게 옴
-  if (message.includes("fetch") || message.includes("network") || message.includes("Failed")) {
-    return "네트워크 연결을 확인해주세요.";
-  }
-  // 그 외엔 백엔드가 준 한국어 메시지 그대로 표시
+  if (message === "Failed to fetch") return "네트워크 연결을 확인해주세요.";
   return message;
 }
-export async function signUp({ studentId, password, name }) {
+export async function signUp({ studentId, password, name, email, departmentId }) {
   const res = await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ studentId, password, name }),
+    body: JSON.stringify({ studentId, password, name, email, departmentId }),
   });
   const data = await res.json();
   if (!data.success) {
