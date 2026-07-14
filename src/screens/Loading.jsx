@@ -1,15 +1,17 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, QTYPE_MAP } from "../styles/tokens";
 import { evaluateAnswer } from "../api";
 import { Sprout } from "../components/Characters";
 import { Centered } from "../components/Layout";
+import { Btn } from "../components/UI";
 import { useApp } from "../AppContext";
 
 export default function Loading() {
   const navigate = useNavigate();
   const { mode, config, session, answers, faceStats, setFeedbacks } = useApp();
   const ranRef = useRef(false);  // StrictMode 이중 실행 방지
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (ranRef.current) return;
@@ -49,9 +51,10 @@ export default function Loading() {
         );
         setFeedbacks(results);
       } catch (e) {
-        // evaluateAnswer 내부에서 이미 더미 폴백하므로 여기 거의 안 옴
         console.warn("[loading] 채점 실패:", e.message);
-        setFeedbacks([]);
+        setError(true);
+        ranRef.current = false; // 다시 시도 가능하게
+        return; // 결과 화면으로 안 넘어가게
       }
       navigate("/result", { replace: true });
     })();
@@ -59,16 +62,32 @@ export default function Loading() {
 
   return (
     <Centered>
-      <div style={{ textAlign: "center" }}>
-        <div className="sprout-grow"><Sprout size={84} /></div>
-        <p style={{ marginTop: 22, fontSize: 16, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em" }}>
-          답변을 살펴보는 중
-        </p>
-        <p style={{ fontSize: 13.5, color: T.inkSoft, marginTop: 4 }}>AI가 피드백과 점수를 정리하고 있어요</p>
-        <div style={{ width: 160, height: 3, background: T.line, borderRadius: 2, margin: "20px auto 0", overflow: "hidden" }}>
-          <div className="bar" style={{ height: "100%", background: T.forest, borderRadius: 2 }} />
+      {error && (
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: 16, fontWeight: 700, color: "#B5503A", marginBottom: 8 }}>
+            AI 응답에 실패했어요
+          </p>
+          <p style={{ fontSize: 13.5, color: T.inkSoft, marginBottom: 20 }}>
+            네트워크 상태를 확인하고 다시 시도해주세요.
+          </p>
+          <Btn variant="primary" onClick={() => { setError(false); ranRef.current = false; }}>
+            다시 시도하기
+          </Btn>
         </div>
-      </div>
+      )}
+      {!error && (
+        <div style={{ textAlign: "center" }}>
+          <div className="sprout-grow"><Sprout size={84} /></div>
+          <p style={{ marginTop: 22, fontSize: 16, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em" }}>
+            답변을 살펴보는 중
+          </p>
+          <p style={{ fontSize: 13.5, color: T.inkSoft, marginTop: 4 }}>AI가 피드백과 점수를 정리하고 있어요</p>
+          <div style={{ width: 160, height: 3, background: T.line, borderRadius: 2, margin: "20px auto 0", overflow: "hidden" }}>
+            <div className="bar" style={{ height: "100%", background: T.forest, borderRadius: 2 }} />
+          </div>
+        </div>
+      )}
+      
       <style>{`
         .sprout-grow { animation: grow 1.6s ease-in-out infinite; transform-origin: bottom; }
         @keyframes grow { 0%,100%{ transform: scale(.96) } 50%{ transform: scale(1.04) } }

@@ -23,7 +23,8 @@ export function Eyebrow({ children, color }) {
 }
 
 /* 버튼 */
-export function Btn({ children, onClick, variant = "primary", style, disabled, type, full }) {
+export function Btn({ children, onClick, variant = "primary", style, disabled, type, full, "aria-label": ariaLabel }) {
+  const [hovered, setHovered] = React.useState(false);
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
     border: "1px solid transparent", borderRadius: 10, padding: "11px 18px",
@@ -43,7 +44,9 @@ export function Btn({ children, onClick, variant = "primary", style, disabled, t
   return (
     <button
       type={type || "button"} onClick={onClick} disabled={disabled}
+      aria-label={ariaLabel}
       style={{ ...base, ...variants[variant], ...style }}
+      onMouseEnter={() => !disabled && setHovered(true)}
       onMouseDown={(e) => !disabled && (e.currentTarget.style.transform = "scale(.98)")}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}

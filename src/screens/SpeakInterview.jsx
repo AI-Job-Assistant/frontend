@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { T, QUESTIONS } from "../styles/tokens";
 import { Card, Btn, Eyebrow } from "../components/UI";
 import { Icon } from "../components/Characters";
-import { Shell, TopBar, Progress, Timer, useTimer } from "../components/Layout";
+import { Shell, TopBar, Progress, Timer, useTimer, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
 import { useFaceAnalysis } from "../components/useFaceAnalysis";
+
 
 /* 브라우저 음성 인식 지원 여부 */
 const SR = typeof window !== "undefined"
@@ -29,6 +30,9 @@ export default function SpeakInterview() {
   const [camReady, setCamReady] = useState(false);
   const [error, setError] = useState("");
   const [sec, reset] = useTimer(recording);
+  const [showQuit, setShowQuit] = useState(false);
+  const [showCamGuide, setShowCamGuide] = useState(true);
+  const [noCam, setNoCam] = useState(false);
   const last = idx === total - 1;
 
   const videoRef = useRef(null);
@@ -36,6 +40,10 @@ export default function SpeakInterview() {
   const recogRef = useRef(null);
   const finalRef = useRef("");
   const camIdRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const canvasRef = useRef(null);
 
   // 얼굴 분석 — recording 동안만 동작 (videoRef·recording 선언 이후에 위치해야 함)
   const { stats: faceStats, resetStats } = useFaceAnalysis(videoRef, recording);
@@ -130,19 +138,60 @@ export default function SpeakInterview() {
     setError("");
     if (!SR) { setError("이 브라우저는 음성 인식을 지원하지 않아요. Chrome을 사용해주세요."); return; }
     setRecording(true);
-    await startCamera();
+    if (!noCam) await startCamera();
     finalRef.current = texts[idx] || "";
     const r = buildRecognizer();
     if (!r) return;
+    // 파형 시각화 시작
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = new AudioContext();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      drawWave();
+    } catch {}
     r._active = true;
     recogRef.current = r;
     try { r.start(); } catch {}
   };
+  const drawWave = () => {
+  const canvas = canvasRef.current;
+  const analyser = analyserRef.current;
+  if (!canvas || !analyser) return;
+  const ctx = canvas.getContext("2d");
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  const draw = () => {
+    animFrameRef.current = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(data);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.strokeStyle = T.forest;
+    ctx.lineWidth = 2;
+    const sliceWidth = canvas.width / data.length;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 128.0;
+      const y = (v * canvas.height) / 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.stroke();
+  };
+  draw();};
 
   const stop = () => {
     if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
     stopCamera();
     setRecording(false);
+    cancelAnimationFrame(animFrameRef.current);
+    audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+  setRecording(false);
     setInterim("");
     // 세션 누적값을 전역에 갱신 (질문마다 갱신해도 누적이라 계속 커짐)
     setFaceStats(faceStats);
@@ -183,7 +232,25 @@ export default function SpeakInterview() {
 
   return (
     <Shell>
-      <TopBar />
+      <TopBar onQuit={() => setShowQuit(true)} />
+        <ConfirmModal
+        open={showCamGuide}
+        title="카메라 · 마이크 권한 안내"
+        desc="면접 진행을 위해 카메라와 마이크 접근 권한이 필요해요. 브라우저 팝업에서 '허용'을 눌러주세요."
+        onConfirm={() => setShowCamGuide(false)}
+        onCancel={() => navigate("/")}
+        confirmText="시작하기"
+        cancelText="돌아가기"
+        />
+        <ConfirmModal
+        open={showQuit}
+        title="면접을 중단할까요?"
+        desc="지금 나가면 진행 중인 답변이 저장되지 않아요."
+        onConfirm={() => { stopCamera(); navigate("/"); }}
+        onCancel={() => setShowQuit(false)}
+        confirmText="나가기"
+        cancelText="계속 진행"
+        />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 0 18px" }}>
         <span style={{ fontSize: 12.5, color: T.inkSoft, fontWeight: 600 }}>{config?.job} · {config?.qtype}</span>
@@ -243,6 +310,34 @@ export default function SpeakInterview() {
               <span>👁 응시 {faceStats.gazeRate}%</span>
             </span>
           )}
+        </div>
+
+        {/* 파형 시각화 */}
+        {recording && (
+          <canvas
+          ref={canvasRef}
+          width={380}
+          height={60}
+          style={{
+            width: "100%", maxWidth: 380,
+            borderRadius: 8, background: T.mist,
+            marginBottom: 12,
+          }}
+        />
+      )}
+
+        {/* 카메라 사용 안 함 토글 */}
+        <div style={{ marginBottom: 14 }}>
+          <button
+          onClick={() => { if (!recording) { stopCamera(); setNoCam((v) => !v); } }}
+          style={{
+            fontSize: 12.5, color: noCam ? T.amber : T.inkSoft,
+            background: "none", border: "none", cursor: "pointer",
+            fontFamily: "inherit", textDecoration: "underline",
+          }}
+          >
+            {noCam ? "📷 카메라 켜기" : "카메라 사용 안 함"}
+          </button>
         </div>
 
         {/* 녹음 버튼 */}

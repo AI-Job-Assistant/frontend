@@ -27,6 +27,7 @@ export function AppProvider({ children }) {
   }, []);
 
   const [faceStats, setFaceStats] = useState(null);  // { smiles, gazeRate }
+  const [totalSec, setTotalSec] = useState(0);
 
   // 면접 1회분 — 질문 생성 응답 보관 (sessionId·questions[])
   const [session, setSession] = useState(null);
@@ -42,6 +43,7 @@ export function AppProvider({ children }) {
     mode, setMode,
     config, setConfig,
     faceStats, setFaceStats,
+    totalSec, setTotalSec,
     session, setSession,
     answers, setAnswers,
     feedbacks, setFeedbacks,

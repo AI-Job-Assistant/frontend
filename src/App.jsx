@@ -2,6 +2,8 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { T } from "./styles/tokens";
 import { useApp } from "./AppContext";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "./components/Layout";
 
 import Login from "./screens/Login";
 import Signup from "./screens/Signup";
@@ -33,22 +35,22 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: T.bg, color: T.ink,
       fontFamily: "'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif" }}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+      <AnimatePresence mode="wait">  
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Protected><Main /></Protected>} />
+          <Route path="/setup" element={<Protected><Setup /></Protected>} />
+          <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />
+          <Route path="/interview/speak" element={<Protected><SpeakInterview /></Protected>} />
+          <Route path="/loading" element={<Protected><Loading /></Protected>} />
+          <Route path="/result" element={<Protected><Result /></Protected>} />
+          <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
 
-        <Route path="/" element={<Protected><Main /></Protected>} />
-        <Route path="/setup" element={<Protected><Setup /></Protected>} />
-        <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />
-        <Route path="/interview/speak" element={<Protected><SpeakInterview /></Protected>} />
-        <Route path="/loading" element={<Protected><Loading /></Protected>} />
-        <Route path="/result" element={<Protected><Result /></Protected>} />
-        <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
-        
-
-        {/* 없는 경로는 메인으로 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* 없는 경로는 메인으로 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
     </div>
   );
 }
