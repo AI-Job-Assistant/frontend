@@ -15,7 +15,7 @@ const SR = typeof window !== "undefined"
 
 export default function SpeakInterview() {
   const navigate = useNavigate();
-  const { config, session, setFaceStats, setAnswers: setSessionAnswers } = useApp();
+  const { config, session, setFaceStats, setAnswers: setSessionAnswers, setTotalSec } = useApp();
 
   // 받아온 질문 (없으면 더미 폴백)
   const qList = session?.questions || QUESTIONS.map((content, i) => ({ id: null, content }));
@@ -44,9 +44,10 @@ export default function SpeakInterview() {
   const analyserRef = useRef(null);
   const animFrameRef = useRef(null);
   const canvasRef = useRef(null);
+  const faceCanvasRef = useRef(null);
 
   // 얼굴 분석 — recording 동안만 동작 (videoRef·recording 선언 이후에 위치해야 함)
-  const { stats: faceStats, resetStats } = useFaceAnalysis(videoRef, recording);
+  const { stats: faceStats, resetStats, detection } = useFaceAnalysis(videoRef, recording);
 
   const startCamera = async () => {
     if (streamRef.current) { console.log("[cam] 이미 켜짐"); return; }
@@ -108,6 +109,25 @@ export default function SpeakInterview() {
   }, []);
 
   useEffect(() => { resetStats(); }, []);
+
+  useEffect(() => {
+    const canvas = faceCanvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (detection) {
+      const scaleX = canvas.width / video.videoWidth;
+      const scaleY = canvas.height / video.videoHeight;
+      const x = canvas.width - (detection.x + detection.width) * scaleX;
+      const y = detection.y * scaleY;
+      const w = detection.width * scaleX;
+      const h = detection.height * scaleY;
+      ctx.strokeStyle = "#46A578";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+    }
+  }, [detection]);
 
   /* 음성 인식기 */
   const buildRecognizer = () => {
@@ -186,12 +206,11 @@ export default function SpeakInterview() {
   const stop = () => {
     if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
     stopCamera();
-    setRecording(false);
     cancelAnimationFrame(animFrameRef.current);
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     analyserRef.current = null;
-  setRecording(false);
+    setRecording(false);
     setInterim("");
     // 세션 누적값을 전역에 갱신 (질문마다 갱신해도 누적이라 계속 커짐)
     setFaceStats(faceStats);
@@ -214,6 +233,7 @@ export default function SpeakInterview() {
     stopCamera();
     if (last) {
       setFaceStats(faceStats);  // 최종 누적 확정
+      setTotalSec(sec);  // 소요 시간 저장 
       // 답변 묶음 전역 저장 (질문 id·내용과 함께)
       setSessionAnswers(
         qList.map((q, i) => ({
@@ -279,6 +299,13 @@ export default function SpeakInterview() {
               opacity: camReady ? 1 : 0, transition: "opacity .3s",
             }}
           />
+          <canvas
+          ref={faceCanvasRef}
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            pointerEvents: "none",}}
+          />
           {!camReady && (
             <div style={{
               position: "absolute", inset: 0, display: "grid", placeItems: "center",
@@ -287,6 +314,18 @@ export default function SpeakInterview() {
               <Icon.cam size={28} />
               <span style={{ fontSize: 12.5 }}>카메라 · 마이크 미리보기</span>
             </div>
+          )}
+          {/* 얼굴 감지 안 됨 표시 */}
+          {recording && !detection && camReady && (
+            <div style={{
+              position: "absolute", bottom: 10, left: "50%",
+              transform: "translateX(-50%)", zIndex: 2,
+              background: "rgba(251, 128, 58, 0.85)",
+              color: "#fff", fontSize: 11.5, fontWeight: 700,
+              padding: "4px 12px", borderRadius: 20,
+              }}>
+                얼굴이 감지되지 않아요
+              </div>
           )}
           {recording && (
             <span style={{
@@ -306,8 +345,11 @@ export default function SpeakInterview() {
               padding: "4px 10px", borderRadius: 20, background: "rgba(0,0,0,.45)",
               color: "#fff", fontSize: 11, fontWeight: 600,
             }}>
-              <span>😊 웃음 {faceStats.smiles}</span>
-              <span>👁 응시 {faceStats.gazeRate}%</span>
+              <span>😊 {faceStats.smiles}회</span>
+              <span style={{ color: detection ? "#7FCBA4" : "#F87171" }}>
+                {detection ? "👁 응시 중" : "👁 이탈"}
+              </span>
+              <span> {faceStats.gazeRate}%</span>
             </span>
           )}
         </div>

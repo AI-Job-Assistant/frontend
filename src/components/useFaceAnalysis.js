@@ -30,6 +30,7 @@ function isLookingAtCamera(landmarks) {
 
 export function useFaceAnalysis(videoRef, active) {
   const [stats, setStats] = useState({ smiles: 0, gazeRate: 0 });
+  const [detection, setDetection] = useState(null);
   const accum = useRef({ frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false });
   const timerId = useRef(null);
   const ready = useRef(false);
@@ -67,6 +68,9 @@ export function useFaceAnalysis(videoRef, active) {
             smiles: a.smiles,
             gazeRate: Math.round((a.gazeFrames / a.frames) * 100),
           });
+          setDetection(result.detection.box); // 얼굴 위치 저장
+        } else{
+          setDetection(null);
         }
       }
       if (!cancelled) timerId.current = setTimeout(detect, 250);
@@ -80,6 +84,7 @@ export function useFaceAnalysis(videoRef, active) {
     accum.current = { frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false };
     setStats({ smiles: 0, gazeRate: 0 });
   };
+  const [detection, setDetection] = useState(null);
+  return { stats, resetStats, detection };
 
-  return { stats, resetStats };
 }
