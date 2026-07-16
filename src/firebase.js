@@ -1,7 +1,7 @@
 /* ============================================================
    Firebase 초기화
    키는 .env 파일에서 읽음 (VITE_ 접두사 필수)
-   .env 예시는 .env.example 참고
+   .env 예시는 FIREBASE_SETUP.md 참고
    ============================================================ */
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
