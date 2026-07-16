@@ -93,9 +93,13 @@ export function SelectField({ label, options, ...props }) {
         onBlur={(e) => (e.target.style.borderColor = T.line)}
       >
         <option value="" disabled>학과를 선택하세요</option>
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
+        {options.map((o) =>
+          typeof o === "object" ? (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ) : (
+            <option key={o} value={o}>{o}</option>
+          )
+        )}
       </select>
     </label>
   );

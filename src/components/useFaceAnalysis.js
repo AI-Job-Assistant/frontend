@@ -84,7 +84,5 @@ export function useFaceAnalysis(videoRef, active) {
     accum.current = { frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false };
     setStats({ smiles: 0, gazeRate: 0 });
   };
-  const [detection, setDetection] = useState(null);
   return { stats, resetStats, detection };
-
 }

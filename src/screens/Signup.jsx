@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { T } from "../styles/tokens";
 import { SproutBadge } from "../components/Characters";
@@ -13,6 +13,17 @@ export default function Signup() {
   const ok = f.id && f.pw && f.pw === f.pw2;
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    fetch("https://jobcoach-backend-e0yl.onrender.com/api/departments")
+      .then((res) => res.json())
+      .then((data) => {
+        setDepartments(data.departments || data.data || data);
+      })
+      .catch((err) => console.error("학과 목록 불러오기 실패:", err));
+  }, []);
 
   const onSignup = async () => {
     if (!ok) return;
@@ -53,15 +64,10 @@ export default function Signup() {
             <Field label="학번" placeholder="20201234" value={f.id} onChange={set("id")} />
             <Field label="이름" placeholder="홍길동" value={f.name} onChange={set("name")} />
             <SelectField
-            label="학과"
-            value={f.dept}
-            onChange={set("dept")}
-            options={[
-            "컴퓨터공학과(주전)",
-            "컴퓨터공학과(복전)",
-            "AI융합학부(주전)",
-            "AI융합학부(복전)",
-            ]}
+              label="학과"
+              value={f.dept}
+              onChange={set("dept")}
+              options={departments.map((d) => ({ value: d.id, label: d.deptName }))}
             />
             <Field label="이메일" placeholder="20201234@sungshin.ac.kr" value={f.email} onChange={set("email")} />
             <Field label="비밀번호" type="password" placeholder="••••••••" value={f.pw} onChange={set("pw")} />
