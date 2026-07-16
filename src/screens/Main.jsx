@@ -5,6 +5,8 @@ import { Icon } from "../components/Characters";
 import { Card, Btn, Eyebrow } from "../components/UI";
 import { Shell, TopBar } from "../components/Layout";
 import { useApp } from "../AppContext";
+import { useState } from "react";
+import ChallengeModal from "./ChallengeModal";
 
 const MODES = [
   {
@@ -15,13 +17,13 @@ const MODES = [
   {
     key: "speaking", label: "Speaking", title: "스피킹 면접", icon: Icon.mic,
     desc: "마이크로 실제처럼 말하며 실전을 연습해요.",
-    meta: "질문 5개 · 약 15분 · 음성·표정 분석",
   },
 ];
 
 export default function Main() {
   const navigate = useNavigate();
   const { setMode } = useApp();
+  const[showChallenge, setShowChallenge] = useState(false);
   const startInterview = (m) => { setMode(m); navigate("/setup"); };
   return (
     <Shell>
@@ -57,6 +59,28 @@ export default function Main() {
           );
         })}
       </div>
+
+      {/* 도전 모드 */}
+      <Card hover onClick={() => setShowChallenge(true)} style={{ padding: 28, marginTop: 16 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 11, background: T.amberSoft,
+          display: "grid", placeItems: "center", color: T.amber, marginBottom: 18,
+        }}>
+
+        </div>
+        <Eyebrow>Challenge</Eyebrow>
+        <h2 style={{ fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em", color: T.ink, margin: "5px 0 10px" }}>도전 모드</h2>
+        <p style={{ fontSize: 14, color: T.inkMid, lineHeight: 1.6, margin: "0 0 18px" }}>
+          질문 1개에 답하고 즉시 AI 피드백을 받아요.
+        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12.5, color: T.inkSoft }}>질문 1개 · 약 3분</span>
+          <span style={{ color: T.amber, display: "inline-flex" }}><Icon.arrow size={20} /></span>
+          </div>
+        </Card>
+        
+        {/* 도전 모드 팝업 */}
+        {showChallenge && <ChallengeModal onClose={() => setShowChallenge(false)} />}
 
       <style>{`@media (max-width:640px){ .mode-grid{ grid-template-columns:1fr !important; } }`}</style>
     </Shell>

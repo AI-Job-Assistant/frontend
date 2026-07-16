@@ -1,32 +1,34 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { T } from "./styles/tokens";
 import { useApp } from "./AppContext";
 import { AnimatePresence } from "framer-motion";
-import { PageTransition } from "./components/Layout";
 
-import Login from "./screens/Login";
-import Signup from "./screens/Signup";
-import Main from "./screens/Main";
-import Setup from "./screens/Setup";
-import TextInterview from "./screens/TextInterview";
-import SpeakInterview from "./screens/SpeakInterview";
-import Loading from "./screens/Loading";
-import Result from "./screens/Result";
-import Mypage from "./screens/Mypage";
+// lazy loading으로 변경 (필요할 때만 다운로드)
+const Login = lazy(() => import("./screens/Login"));
+const Signup = lazy(() => import("./screens/Signup"));
+const Main = lazy(() => import("./screens/Main"));
+const Setup = lazy(() => import("./screens/Setup"));
+const TextInterview = lazy(() => import("./screens/TextInterview"));
+const SpeakInterview = lazy(() => import("./screens/SpeakInterview"));
+const Loading = lazy(() => import("./screens/Loading"));
+const Result = lazy(() => import("./screens/Result"));
+const Mypage = lazy(() => import("./screens/Mypage"));
 
-/* 로그인 안 했으면 /login 으로. 단, Firebase 인증 확인 전엔 잠깐 대기 */
+/* 로딩 중 보여줄 화면 */
+function PageLoader() {
+  return (
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: T.inkSoft, fontSize: 14 }}>
+      불러오는 중…
+    </div>
+  );
+}
+
+/* 로그인 안 했으면 /login 으로 */
 function Protected({ children }) {
   const { studentId, authReady } = useApp();
   const loc = useLocation();
-  if (!authReady) {
-    // 새로고침 직후 Firebase가 로그인 상태를 확인하는 짧은 순간
-    return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: T.inkSoft, fontSize: 14 }}>
-        불러오는 중…
-      </div>
-    );
-  }
+  if (!authReady) return <PageLoader />;
   if (!studentId) return <Navigate to="/login" replace state={{ from: loc }} />;
   return children;
 }
@@ -35,21 +37,21 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: T.bg, color: T.ink,
       fontFamily: "'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif" }}>
-      <AnimatePresence mode="wait">  
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/" element={<Protected><Main /></Protected>} />
-          <Route path="/setup" element={<Protected><Setup /></Protected>} />
-          <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />
-          <Route path="/interview/speak" element={<Protected><SpeakInterview /></Protected>} />
-          <Route path="/loading" element={<Protected><Loading /></Protected>} />
-          <Route path="/result" element={<Protected><Result /></Protected>} />
-          <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
-
-          {/* 없는 경로는 메인으로 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <AnimatePresence mode="wait">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={<Protected><Main /></Protected>} />
+            <Route path="/setup" element={<Protected><Setup /></Protected>} />
+            <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />
+            <Route path="/interview/speak" element={<Protected><SpeakInterview /></Protected>} />
+            <Route path="/loading" element={<Protected><Loading /></Protected>} />
+            <Route path="/result" element={<Protected><Result /></Protected>} />
+            <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AnimatePresence>
     </div>
   );
