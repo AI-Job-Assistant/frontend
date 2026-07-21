@@ -1,5 +1,6 @@
 // src/api.js
 import { QTYPE_MAP, JOB_MAP, QUESTIONS, FEEDBACK } from "./styles/tokens";
+import { getToken } from "./auth";
 
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
@@ -7,9 +8,16 @@ const BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 async function req(path, { method = "GET", body } = {}) {
   const url = `${BASE}${path}`;
   console.log(`[api] → ${method} ${url}`, body ?? "");
+
+  const token = getToken(); // 저장된 JWT (없으면 null)
+  const headers = {
+    ...(body ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   const res = await fetch(url, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   // 서버가 안 떠 있으면 index.html(HTML)이 와서 JSON 파싱이 깨짐 → 명확한 에러로
