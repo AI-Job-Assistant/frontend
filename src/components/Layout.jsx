@@ -25,7 +25,11 @@ export function Centered({ children }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}
+      style={{
+        position: "fixed", inset: 0,
+        display: "grid", placeItems: "center",
+        padding: 24, overflow: "auto",
+      }}
     >
       {children}
     </motion.div>

@@ -76,14 +76,23 @@ export default function Loading() {
         </div>
       )}
       {!error && (
-        <div style={{ textAlign: "center" }}>
-          <div className="sprout-grow"><Sprout size={84} /></div>
-          <p style={{ marginTop: 22, fontSize: 16, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em" }}>
-            답변을 살펴보는 중
-          </p>
-          <p style={{ fontSize: 13.5, color: T.inkSoft, marginTop: 4 }}>AI가 피드백과 점수를 정리하고 있어요</p>
-          <div style={{ width: 160, height: 3, background: T.line, borderRadius: 2, margin: "20px auto 0", overflow: "hidden" }}>
-            <div className="bar" style={{ height: "100%", background: T.forest, borderRadius: 2 }} />
+        <div style={{ textAlign: "center", position: "relative" }}>
+          {/* 새싹 = 화면 정중앙에 고정. 아래 텍스트는 절대 위치로 새싹 밑에 배치 */}
+          <div className="sprout-grow">
+            <Sprout size={84} />
+          </div>
+          <div style={{
+            position: "absolute", top: "100%", left: "50%",
+            transform: "translateX(-50%)", width: 260,
+            marginTop: 22,
+          }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em", margin: 0 }}>
+              답변을 살펴보는 중
+            </p>
+            <p style={{ fontSize: 13.5, color: T.inkSoft, marginTop: 4 }}>AI가 피드백과 점수를 정리하고 있어요</p>
+            <div style={{ width: 160, height: 3, background: T.line, borderRadius: 2, margin: "20px auto 0", overflow: "hidden" }}>
+              <div className="bar" style={{ height: "100%", background: T.forest, borderRadius: 2 }} />
+            </div>
           </div>
         </div>
       )}

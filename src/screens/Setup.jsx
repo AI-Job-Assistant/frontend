@@ -15,6 +15,7 @@ export default function Setup() {
   const [qtype, setQtype] = useState(null);
   const [itype, setItype] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
   const ready = job && qtype && itype;
 
   // 현재 분야의 세부 직무 목록
@@ -29,16 +30,18 @@ export default function Setup() {
   const onStart = async () => {
     if (loading) return;
     setLoading(true);
+    setErr("");
     setConfig({ field, job, qtype, itype });
     // 새 면접 시작이니 이전 면접 결과·표정 통계 초기화
     setFeedbacks([]);
     setFaceStats(null);
     try {
-      const data = await createQuestions(job, qtype);  // API 호출 (실패 시 더미 폴백)
+      const data = await createQuestions(job, qtype);  // 실패하면 catch로 던져짐
       setSession(data);  // { sessionId, questions[] } 보관
       navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
     } catch (e) {
       console.error("[Setup] 질문 생성 오류:", e);
+      setErr("질문 생성에 실패했어요. 서버 상태를 확인하고 다시 시도해주세요.");
       setLoading(false);
     }
   };
@@ -86,6 +89,9 @@ export default function Setup() {
           </div>
         </Section>
 
+        {err && (
+          <p style={{ color: "#B5503A", fontSize: 12.5, margin: "14px 0 0" }}>{err}</p>
+        )}
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           flexWrap: "wrap", gap: 14,

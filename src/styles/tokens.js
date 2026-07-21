@@ -31,7 +31,7 @@ export const T = {
 };
 
 /* 점수 → 성장 단계 색 (잔디/새싹 공용) — 민트~딥그린 */
-export const GROWTH = ["#EDEFE6", "#B8E0C8", "#7FCBA4", "#46A578", "#1F6B4A"];
+export const GROWTH = ["#D9E6D0", "#B8E0C8", "#7FCBA4", "#46A578", "#1F6B4A"];
 
 /* ── 직무: 분야 → 세부 직무 ── */
 export const JOB_GROUPS = [

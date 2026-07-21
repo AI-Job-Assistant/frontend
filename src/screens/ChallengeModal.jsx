@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { T, JOB_GROUPS, QTYPES, QTYPE_MAP } from "../styles/tokens";
 import { Btn, Chip, Eyebrow, Card } from "../components/UI";
+import { Sprout } from "../components/Characters";
 import { createQuestions, evaluateAnswer } from "../api";
 
 /* 단계: select → loading → question → result */
@@ -13,6 +14,7 @@ export default function ChallengeModal({ onClose }) {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [err, setErr] = useState("");
+  const [loadingText, setLoadingText] = useState("질문을 준비하고 있어요");
 
   const jobsInField = JOB_GROUPS.find((g) => g.field === field)?.jobs || [];
   const ready = job && qtype;
@@ -20,6 +22,7 @@ export default function ChallengeModal({ onClose }) {
   /* 질문 생성 */
   const onStart = async () => {
     if (!ready) return;
+    setLoadingText("질문을 준비하고 있어요");
     setStep("loading");
     setErr("");
     try {
@@ -39,6 +42,7 @@ export default function ChallengeModal({ onClose }) {
   /* 답변 제출 */
   const onSubmit = async () => {
     if (!answer.trim()) { setErr("답변을 입력해주세요."); return; }
+    setLoadingText("답변을 살펴보고 있어요");
     setStep("loading");
     setErr("");
     try {
@@ -131,7 +135,7 @@ export default function ChallengeModal({ onClose }) {
             </div>
 
             <Btn variant="accent" full disabled={!ready} onClick={onStart}>
-              질문 받기 🎯
+              질문 받기
             </Btn>
           </div>
         )}
@@ -139,7 +143,8 @@ export default function ChallengeModal({ onClose }) {
         {/* 단계 2: 로딩 */}
         {step === "loading" && (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <p style={{ fontSize: 15, color: T.inkSoft }}>잠시만요...</p>
+            <div className="sprout-grow"><Sprout size={56} /></div>
+            <p style={{ fontSize: 14.5, color: T.inkSoft, marginTop: 16, fontWeight: 600 }}>{loadingText}</p>
           </div>
         )}
 
@@ -148,7 +153,7 @@ export default function ChallengeModal({ onClose }) {
           <div>
             <Card style={{ padding: 20, marginBottom: 16, background: T.mist, border: "none" }}>
               <Eyebrow>Question</Eyebrow>
-              <p style={{ fontSize: 16, fontWeight: 700, color: T.ink, lineHeight: 1.5, margin: "8px 0 0" }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: T.ink, lineHeight: 1.5, margin: "8px 0 0", textIndent: "1em" }}>
                 {question.content}
               </p>
             </Card>
@@ -156,7 +161,7 @@ export default function ChallengeModal({ onClose }) {
             <textarea
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              placeholder="답변을 입력해주세요…"
+              placeholder="답변을 입력해주세요."
               style={{
                 width: "100%", boxSizing: "border-box", minHeight: 140,
                 padding: 14, borderRadius: 11, border: `1px solid ${T.line}`,
@@ -202,11 +207,16 @@ export default function ChallengeModal({ onClose }) {
 
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <Btn variant="outline" full onClick={onClose}>끝내기</Btn>
-              <Btn variant="accent" full onClick={onRetry}>한 번 더 🎯</Btn>
+              <Btn variant="accent" full onClick={onRetry}>다시하기</Btn>
             </div>
           </div>
         )}
       </div>
+      <style>{`
+        .sprout-grow { animation: sproutGrow 1.6s ease-in-out infinite; transform-origin: bottom; display: inline-block; }
+        @keyframes sproutGrow { 0%,100%{ transform: scale(.96) } 50%{ transform: scale(1.04) } }
+        @media (prefers-reduced-motion: reduce){ .sprout-grow{ animation: none } }
+      `}</style>
     </div>
   );
 }

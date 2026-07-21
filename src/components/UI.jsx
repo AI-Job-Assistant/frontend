@@ -35,11 +35,11 @@ export function Btn({ children, onClick, variant = "primary", style, disabled, t
     opacity: disabled ? 0.45 : 1, width: full ? "100%" : "auto",
   };
   const variants = {
-    primary: { background: T.forest, color: "#fff" },
-    accent: { background: T.amber, color: "#fff" },
-    outline: { background: "transparent", color: T.ink, borderColor: T.lineStrong },
-    ghost: { background: "transparent", color: T.inkMid },
-    soft: { background: T.mist, color: T.forest },
+    primary: { background: hovered ? "#2E4830" : T.forest, color: "#fff" },
+    accent: { background: hovered ? "#A8652F" : T.amber, color: "#fff" },
+    outline: { background: hovered ? T.mist : "transparent", color: T.ink, borderColor: T.lineStrong },
+    ghost: { background: hovered ? T.surfaceAlt : "transparent", color: T.inkMid },
+    soft: { background: hovered ? "#DCE6D3" : T.mist, color: T.forest },
   };
   return (
     <button
@@ -47,9 +47,9 @@ export function Btn({ children, onClick, variant = "primary", style, disabled, t
       aria-label={ariaLabel}
       style={{ ...base, ...variants[variant], ...style }}
       onMouseEnter={() => !disabled && setHovered(true)}
+      onMouseLeave={(e) => { setHovered(false); e.currentTarget.style.transform = "scale(1)"; }}
       onMouseDown={(e) => !disabled && (e.currentTarget.style.transform = "scale(.98)")}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
       {children}
     </button>
@@ -108,17 +108,26 @@ export function SelectField({ label, options, ...props }) {
 /* 카드 — 그림자 제거, 얇은 보더 */
 export function Card({ children, style, onClick, hover }) {
   const [h, setH] = React.useState(false);
+  const clickable = !!onClick;
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => hover && setH(true)}
       onMouseLeave={() => hover && setH(false)}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e); }
+      } : undefined}
+      onFocus={() => hover && setH(true)}
+      onBlur={() => hover && setH(false)}
       style={{
         background: T.surface, borderRadius: 14,
         border: `1px solid ${h ? T.lineStrong : T.line}`,
         padding: 24, cursor: onClick ? "pointer" : "default",
         transition: "border-color .15s, transform .15s",
         transform: h ? "translateY(-2px)" : "none",
+        outline: "none",
         ...style,
       }}
     >
@@ -126,7 +135,6 @@ export function Card({ children, style, onClick, hover }) {
     </div>
   );
 }
-
 /* 선택 칩 — 선택 시 앰버 보더 + 연한 배경 */
 export function Chip({ children, active, onClick }) {
   return (

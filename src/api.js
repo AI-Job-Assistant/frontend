@@ -1,5 +1,5 @@
 // src/api.js
-import { QTYPE_MAP, JOB_MAP, QUESTIONS, FEEDBACK } from "./styles/tokens";
+import { QTYPE_MAP, JOB_MAP } from "./styles/tokens";
 import { getToken } from "./auth";
 
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
@@ -37,28 +37,16 @@ async function req(path, { method = "GET", body } = {}) {
    화면 직무·유형 → 명세서 Enum/jobId·jobName 변환해서 전송 */
 export async function createQuestions(jobLabel, qtypeLabel) {
   const jobPart = JOB_MAP[jobLabel];          // { jobId } 또는 { jobName }
-  const questionType = QTYPE_MAP[qtypeLabel]; // Figma 표기 → 명세서 Enum
+  const questionType = QTYPE_MAP[qtypeLabel]; 
 
   if (!jobPart) throw new Error(`매핑 안 된 직무: ${jobLabel}`);
   if (!questionType) throw new Error(`매핑 안 된 질문유형: ${qtypeLabel}`);
 
-  try {
-    return await req("/api/interview/questions", {
-      method: "POST",
-      body: { ...jobPart, questionType },
-    });
-  } catch (e) {
-    // 서버 꺼짐 등 → 더미 질문으로 폴백 (개발 계속 가능)
-    console.warn("[api] 질문 생성 실패 → 더미 폴백:", e.message);
-    return {
-      sessionId: null,  // null이면 폴백 세션이란 뜻
-      jobName: jobLabel,
-      questionType,
-      questions: QUESTIONS.map((content, i) => ({
-        id: null, orderNo: i + 1, content,
-      })),
-    };
-  }
+  // 더미 폴백 없음 — 실패하면 그대로 위로 던져서 화면에서 처리
+  return await req("/api/interview/questions", {
+    method: "POST",
+    body: { ...jobPart, questionType },
+  });
 }
 
 /* ── 2. 답변 평가 ───────────────────────────────
