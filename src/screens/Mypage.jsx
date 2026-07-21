@@ -28,15 +28,15 @@ export default function Mypage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    
     async function loadData() {
       try {
         const [statsData, historyData, heatmapData, analysisData] = await Promise.all([
-          getStats(),
-          getHistory(),
-          getHeatmap(),
-          getAnalysis(),
+          getStats().catch(() => null),
+          getHistory().catch(() => []),
+          getHeatmap().catch(() => []),
+          getAnalysis().catch(() => null),
         ]);
+        
         setStats(statsData);
         setHistory(historyData);
         setHeatmap(heatmapData);
@@ -53,51 +53,51 @@ export default function Mypage() {
 
   if (loading) {
     return (
-    <Shell>
-      <TopBar showMypage={false} />
-      {/* 프로필 스켈레톤 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 20px" }}>
-        <div style={{ width: 54, height: 54, borderRadius: "50%", background: T.line }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ width: 120, height: 16, borderRadius: 6, background: T.line }} />
-          <div style={{ width: 180, height: 12, borderRadius: 6, background: T.surfaceAlt }} />
-        </div>
-      </div>
-      {/* 통계 3칸 스켈레톤 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-        {[1, 2, 3].map((i) => (
-          <div key={i} style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: "18px 20px" }}>
-            <div style={{ width: 80, height: 10, borderRadius: 4, background: T.line, marginBottom: 8 }} />
-            <div style={{ width: 60, height: 30, borderRadius: 6, background: T.surfaceAlt }} />
+      <Shell>
+        <TopBar showMypage={false} />
+        {/* 프로필 스켈레톤 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 20px" }}>
+          <div style={{ width: 54, height: 54, borderRadius: "50%", background: T.line }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ width: 120, height: 16, borderRadius: 6, background: T.line }} />
+            <div style={{ width: 180, height: 12, borderRadius: 6, background: T.surfaceAlt }} />
           </div>
-        ))}
-      </div>
-      {/* 잔디 스켈레톤 */}
-      <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: 24, marginBottom: 16 }}>
-        <div style={{ width: 80, height: 12, borderRadius: 4, background: T.line, marginBottom: 16 }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 5 }}>
-          {Array.from({ length: 91 }).map((_, i) => (
-            <div key={i} style={{ aspectRatio: "1", borderRadius: 4, background: T.surfaceAlt }} />
+        </div>
+        {/* 통계 3칸 스켈레톤 */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: "18px 20px" }}>
+              <div style={{ width: 80, height: 10, borderRadius: 4, background: T.line, marginBottom: 8 }} />
+              <div style={{ width: 60, height: 30, borderRadius: 6, background: T.surfaceAlt }} />
+            </div>
           ))}
         </div>
-      </div>
-      {/* 이력 스켈레톤 */}
-      <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: 24 }}>
-        <div style={{ width: 100, height: 12, borderRadius: 4, background: T.line, marginBottom: 16 }} />
-        {[1, 2, 3].map((i) => (
-          <div key={i} style={{ padding: "14px 0", borderTop: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ width: 160, height: 13, borderRadius: 4, background: T.line }} />
-              <div style={{ width: 100, height: 10, borderRadius: 4, background: T.surfaceAlt }} />
-            </div>
-            <div style={{ width: 40, height: 20, borderRadius: 4, background: T.surfaceAlt }} />
+        {/* 잔디 스켈레톤 */}
+        <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: 24, marginBottom: 16 }}>
+          <div style={{ width: 80, height: 12, borderRadius: 4, background: T.line, marginBottom: 16 }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 5 }}>
+            {Array.from({ length: 91 }).map((_, i) => (
+              <div key={i} style={{ aspectRatio: "1", borderRadius: 4, background: T.surfaceAlt }} />
+            ))}
           </div>
-        ))}
-      </div>
-    </Shell>
-  );}
+        </div>
+        {/* 이력 스켈레톤 */}
+        <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.line}`, padding: 24 }}>
+          <div style={{ width: 100, height: 12, borderRadius: 4, background: T.line, marginBottom: 16 }} />
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ padding: "14px 0", borderTop: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ width: 160, height: 13, borderRadius: 4, background: T.line }} />
+                <div style={{ width: 100, height: 10, borderRadius: 4, background: T.surfaceAlt }} />
+              </div>
+              <div style={{ width: 40, height: 20, borderRadius: 4, background: T.surfaceAlt }} />
+            </div>
+          ))}
+        </div>
+      </Shell>
+    );
+  }
 
-  // heatmap 배열을 91칸짜리 잔디로 변환 (날짜순 그대로, 부족하면 null로 채움)
   const cells = Array.from({ length: 91 }, (_, i) => {
     const h = heatmap[i];
     return h ? Number(h.avgScore) : null;
@@ -177,7 +177,7 @@ export default function Mypage() {
               <div>
                 <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink }}>{h.jobName} · {h.questionType}</div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>
-                  {new Date(h.createdAt).toLocaleDateString("ko-KR")} · {h.durationMin != null ? `${h.durationMin}분` : "기록 없음"}
+                  {h.createdAt ? new Date(h.createdAt).toLocaleDateString("ko-KR") : "날짜 없음"} · {h.durationMin != null ? `${h.durationMin}분` : "기록 없음"}
                 </div>
               </div>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
@@ -210,25 +210,26 @@ export default function Mypage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
               <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8 }}>💪 대표 강점</div>
-                {analysis.topStrengths.map((s, i) => (
+                {analysis.topStrengths?.map((s, i) => (
                   <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {s}</div>
                 ))}
               </div>
               <div style={{ padding: "14px 16px", borderRadius: 10, background: T.amberSoft }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 8 }}>🎯 보완할 점</div>
-                {analysis.topWeaknesses.map((w, i) => (
+                {analysis.topWeaknesses?.map((w, i) => (
                   <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {w}</div>
                 ))}
-                </div>
               </div>
-              <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
-            </>
-          )}
-        </Card>
+            </div>
+            <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
+          </>
+        )}
+      </Card>
       <style>{`@media (max-width:560px){ .stat-grid{ grid-template-columns:1fr 1fr !important; } }`}</style>
     </Shell>
   );
 }
+
 function Stat({ label, ko, value, unit, accent }) {
   return (
     <Card style={{ padding: "18px 20px" }}>
@@ -240,4 +241,3 @@ function Stat({ label, ko, value, unit, accent }) {
     </Card>
   );
 }
-

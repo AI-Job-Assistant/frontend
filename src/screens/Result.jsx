@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { T, QUESTIONS, FEEDBACK, GROWTH } from "../styles/tokens";
+import { T, GROWTH } from "../styles/tokens";
 import { SproutBadge, Icon } from "../components/Characters";
 import { Card, Btn, Eyebrow } from "../components/UI";
 import { Shell, TopBar } from "../components/Layout";
@@ -15,34 +15,31 @@ function stageFor(score) {
 }
 
 function normalize(feedbacks, session) {
-  const qTexts = session?.questions?.map((q) => q.content) || QUESTIONS;
+  const qTexts = session?.questions?.map((q) => q.content) || [];
+  
   if (!feedbacks || feedbacks.length === 0) {
     return {
-      score: FEEDBACK.score,
-      perQ: FEEDBACK.perQ.map((p, i) => ({
-        question: qTexts[i],
-        score: p.score,
-        strengths: [p.strength],
-        improvements: [p.improve],
-        suggestion: p.suggest,
-      })),
+      score: 0,
+      perQ: [],
     };
   }
+  
   const perQ = feedbacks.map((f, i) => ({
-    question: qTexts[i],
+    question: qTexts[i] || f.question || `질문 ${i + 1}`,
     score: f.score ?? 0,
     strengths: Array.isArray(f.strengths) ? f.strengths : [f.strengths].filter(Boolean),
     improvements: Array.isArray(f.improvements) ? f.improvements : [f.improvements].filter(Boolean),
     suggestion: f.suggestion || "",
   }));
-  const avg = Math.round(perQ.reduce((s, p) => s + p.score, 0) / perQ.length);
+  
+  const avg = perQ.length > 0 ? Math.round(perQ.reduce((s, p) => s + p.score, 0) / perQ.length) : 0;
   return { score: avg, perQ };
 }
 
 export default function Result() {
   const navigate = useNavigate();
   const { config, faceStats, feedbacks, session, totalSec, answers } = useApp();
-  const [open, setOpen] = useState(0); // 펼쳐진 질문 인덱스 (null이면 다 닫힘)
+  const [open, setOpen] = useState(0); // 펼쳐진 질문 인덱스
 
   const data = normalize(feedbacks, session);
 
