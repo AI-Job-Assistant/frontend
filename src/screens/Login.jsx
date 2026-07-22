@@ -10,7 +10,7 @@ import { PageTransition } from "../components/Layout";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setStudentId: _set, user: _u } = useApp(); // authReady 대기 불필요
+  const { setStudentId } = useApp(); // authReady 대기 불필요
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -20,8 +20,10 @@ export default function Login() {
     if (!id || !pw) { setErr("학번과 비밀번호를 입력해주세요."); return; }
     setErr(""); setBusy(true);
     try {
-      await signIn({ studentId: id, password: pw });
-      navigate("/");           // 로그인 성공 → 메인
+      const user = await signIn({ studentId: id, password: pw });
+      // AppContext에 studentId 반영
+      setStudentId(user.studentId);
+      navigate("/");          // 로그인 성공 → 메인
     } catch (e) {
       // Firebase는 e.code, MySQL은 e.message로 에러가 옴
       setErr(authErrorMessage(e.message));
@@ -66,6 +68,16 @@ export default function Login() {
               {busy ? "로그인 중…" : "로그인"}
             </Btn>
             <p style={{ textAlign: "center", fontSize: 13.5, color: T.inkSoft, marginTop: 20 }}>
+              {err && err.includes("올바르지") && (
+                <p style={{ fontSize: 12.5, color: T.inkSoft, margin: "-6px 0 12px" }}>
+                  <span
+                  style={{ color: T.forest, fontWeight: 700, cursor: "pointer" }}
+                  onClick={() => navigate("/forgot-password")}
+                  >
+                    비밀번호를 잊으셨나요?
+                  </span>
+                </p>
+              )}
               아직 계정이 없으신가요?{" "}
               <span style={{ color: T.forest, fontWeight: 700, cursor: "pointer" }} onClick={() => navigate("/signup")}>회원가입</span>
             </p>

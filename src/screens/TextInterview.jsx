@@ -15,13 +15,27 @@ export default function TextInterview() {
   const total = questions.length;
 
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState(Array(total).fill(""));
+  const [answers, setAnswers] = useState(() => {
+    const saved = localStorage.getItem("draft_answers");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length === total) return parsed;
+      } catch {}
+    }
+    return Array(total).fill("");
+  });
   const [running, setRunning] = useState(true);
   const [sec] = useTimer(running);
   const [showQuit, setShowQuit] = useState(false);
   const last = idx === total - 1;
 
-  const setAns = (v) => { const a = [...answers]; a[idx] = v; setAnswers(a); };
+  const setAns = (v) => {
+    const a = [...answers];
+    a[idx] = v;
+    setAnswers(a);
+    localStorage.setItem("draft_answers", JSON.stringify(a));
+  };
 
   const submit = () => {
     // 화면 로컬 답변 → 전역으로 (질문 id·내용과 묶어서)
@@ -33,6 +47,8 @@ export default function TextInterview() {
     setSessionAnswers(payload);
     setTotalSec(sec);
     setRunning(false);
+    localStorage.removeItem("draft_answers");
+    navigate("/loading");
     navigate("/loading");
   };
 

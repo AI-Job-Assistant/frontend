@@ -47,7 +47,7 @@ export default function ChallengeModal({ onClose }) {
     setErr("");
     try {
       const result = await evaluateAnswer({
-        questionId: question.id,
+        questionId: null,
         question: question.content,
         answer,
         questionType: QTYPE_MAP[qtype] || qtype,

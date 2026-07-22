@@ -39,7 +39,7 @@ export function AppProvider({ children }) {
   const [feedbacks, setFeedbacks] = useState([]);
 
   const value = {
-    studentId, user, authReady,
+    studentId, setStudentId, user, authReady,
     mode, setMode,
     config, setConfig,
     faceStats, setFaceStats,

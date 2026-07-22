@@ -28,7 +28,7 @@ function isLookingAtCamera(landmarks) {
   return offset < 0.12;
 }
 
-export function useFaceAnalysis(videoRef, active) {
+export function useFaceAnalysis(videoRef, active, accumActive = false) {
   const [stats, setStats] = useState({ smiles: 0, gazeRate: 0 });
   const [detection, setDetection] = useState(null);
   const accum = useRef({ frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false });
@@ -53,22 +53,22 @@ export function useFaceAnalysis(videoRef, active) {
           .withFaceExpressions();
 
         if (result) {
-          const a = accum.current;
-          a.frames++;
-          if (isLookingAtCamera(result.landmarks)) a.gazeFrames++;
-
-          const happy = result.expressions.happy;
-          if (happy > 0.7) {
-            if (!a.wasSmiling) { a.smiles++; a.wasSmiling = true; }
-          } else if (happy < 0.4) {
-            a.wasSmiling = false;
+          if (accumActive) {
+            const a = accum.current;
+            a.frames++;
+            if (isLookingAtCamera(result.landmarks)) a.gazeFrames++;
+            const happy = result.expressions.happy;
+            if (happy > 0.7) {
+              if (!a.wasSmiling) { a.smiles++; a.wasSmiling = true; }
+            } else if (happy < 0.4) {
+              a.wasSmiling = false;
+            }
+            setStats({
+              smiles: a.smiles,
+              gazeRate: Math.round((a.gazeFrames / a.frames) * 100),
+            });
           }
-
-          setStats({
-            smiles: a.smiles,
-            gazeRate: Math.round((a.gazeFrames / a.frames) * 100),
-          });
-          setDetection(result.detection.box); // 얼굴 위치 저장
+          setDetection(result.detection.box);
         } else{
           setDetection(null);
         }
@@ -78,7 +78,7 @@ export function useFaceAnalysis(videoRef, active) {
 
     detect();
     return () => { cancelled = true; clearTimeout(timerId.current); };
-  }, [active, videoRef]);
+  }, [active, videoRef, accumActive]);
 
   const resetStats = () => {
     accum.current = { frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false };

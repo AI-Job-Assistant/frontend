@@ -1,29 +1,29 @@
-import React from "react";
+import React, { memo } from "react";
 import { T } from "../styles/tokens";
 import { Sprout } from "./Characters";
 
 /* 로고 — 워드마크 + 미니 새싹 */
-export function Logo({ onClick }) {
+export const Logo = memo(function Logo({ onClick }) {
   return (
     <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 9, cursor: onClick ? "pointer" : "default" }}>
       <Sprout size={26} />
       <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em", color: T.ink }}>새싹</span>
     </div>
   );
-}
+});
 
 /* eyebrow — 작은 영문 라벨 */
-export function Eyebrow({ children, color }) {
+export const Eyebrow = memo(function Eyebrow({ children, color }) {
   return (
     <span style={{
       fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase",
       color: color || T.sage,
     }}>{children}</span>
   );
-}
+});
 
 /* 버튼 */
-export function Btn({ children, onClick, variant = "primary", style, disabled, type, full, "aria-label": ariaLabel }) {
+export const Btn = memo(function Btn({ children, onClick, variant = "primary", style, disabled, type, full, "aria-label": ariaLabel }) {
   const [hovered, setHovered] = React.useState(false);
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -54,29 +54,48 @@ export function Btn({ children, onClick, variant = "primary", style, disabled, t
       {children}
     </button>
   );
-}
+});
 
 /* 입력 필드 */
-export function Field({ label, ...props }) {
+export const Field = memo(function Field({ label, type, ...props }) {
+  const [show, setShow] = React.useState(false);
+  const isPassword = type === "password";
   return (
     <label style={{ display: "block", marginBottom: 14 }}>
       <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: T.inkMid, marginBottom: 7 }}>{label}</span>
-      <input
-        {...props}
-        style={{
-          width: "100%", boxSizing: "border-box", padding: "11px 13px",
-          borderRadius: 10, border: `1px solid ${T.line}`, fontSize: 14.5,
-          background: T.surface, color: T.ink, outline: "none", fontFamily: "inherit",
-          transition: "border-color .15s",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = T.sage)}
-        onBlur={(e) => (e.target.style.borderColor = T.line)}
-      />
+      <div style={{ position: "relative" }}>
+        <input
+          {...props}
+          type={isPassword ? (show ? "text" : "password") : type}
+          style={{
+            width: "100%", boxSizing: "border-box", padding: "11px 13px",
+            paddingRight: isPassword ? 40 : 13,
+            borderRadius: 10, border: `1px solid ${T.line}`, fontSize: 14.5,
+            background: T.surface, color: T.ink, outline: "none", fontFamily: "inherit",
+            transition: "border-color .15s",
+          }}
+          onFocus={(e) => (e.target.style.borderColor = T.sage)}
+          onBlur={(e) => (e.target.style.borderColor = T.line)}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShow((v) => !v)}
+            style={{
+              position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer",
+              color: T.inkSoft, fontSize: 16, padding: 0, lineHeight: 1,
+            }}
+          >
+            {show ? "🙈" : "👁"}
+          </button>
+        )}
+      </div>
     </label>
   );
-}
+});
 
-export function SelectField({ label, options, ...props }) {
+export const SelectField = memo(function SelectField({ label, options, ...props }) {
   return (
     <label style={{ display: "block", marginBottom: 14 }}>
       <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: T.inkMid, marginBottom: 7 }}>{label}</span>
@@ -103,10 +122,10 @@ export function SelectField({ label, options, ...props }) {
       </select>
     </label>
   );
-}
+});
 
 /* 카드 — 그림자 제거, 얇은 보더 */
-export function Card({ children, style, onClick, hover }) {
+export const Card = memo(function Card({ children, style, onClick, hover }) {
   const [h, setH] = React.useState(false);
   const clickable = !!onClick;
   return (
@@ -134,9 +153,10 @@ export function Card({ children, style, onClick, hover }) {
       {children}
     </div>
   );
-}
+});
+
 /* 선택 칩 — 선택 시 앰버 보더 + 연한 배경 */
-export function Chip({ children, active, onClick }) {
+export const Chip = memo(function Chip({ children, active, onClick }) {
   return (
     <button
       onClick={onClick}
@@ -152,9 +172,9 @@ export function Chip({ children, active, onClick }) {
       {children}
     </button>
   );
-}
+});
 
-export function Section({ label, title, children }) {
+export const Section = memo(function Section({ label, title, children }) {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ marginBottom: 11 }}>
@@ -164,4 +184,4 @@ export function Section({ label, title, children }) {
       {children}
     </div>
   );
-}
+});

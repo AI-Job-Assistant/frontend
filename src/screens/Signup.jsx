@@ -30,7 +30,13 @@ export default function Signup() {
     if (f.pw.length < 8) { setErr("비밀번호는 6자 이상이어야 해요."); return; }
     setErr(""); setBusy(true);
     try {
-      await signUp({ studentId: f.id, password: f.pw, name: f.name, email: f.email, departmentId: f.dept });
+      const result = await signUp({ studentId: f.id, password: f.pw, name: f.name, email: f.email, departmentId: f.dept });
+      // 회원가입 성공 시 토큰 저장
+      if (result?.token) {
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("studentId", result.user?.studentId || f.id);
+        localStorage.setItem("userName", result.user?.name || f.name);
+      }
       navigate("/");           // 가입 성공 → 자동 로그인 → 메인
     } catch (e) {
       setErr(authErrorMessage(e.message));

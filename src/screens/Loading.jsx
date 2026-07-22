@@ -38,17 +38,17 @@ export default function Loading() {
           : undefined;
 
       try {
-        const results = await Promise.all(
-          answers.map((a) =>
-            evaluateAnswer({
-              questionId: a.questionId,
-              question: a.question,
-              answer: a.answer,
-              questionType,
-              extra,
-            })
-          )
-        );
+        const results = [];
+        for (const a of answers) {
+          const result = await evaluateAnswer({
+            questionId: a.questionId,
+            question: a.question,
+            answer: a.answer,
+            questionType,
+            extra,
+          });
+          results.push(result);
+        }
         setFeedbacks(results);
       } catch (e) {
         console.warn("[loading] 채점 실패:", e.message);
