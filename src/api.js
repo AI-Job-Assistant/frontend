@@ -35,38 +35,28 @@ async function req(path, { method = "GET", body } = {}) {
 
 /* ── 1. 질문 생성 ───────────────────────────────
    화면 직무·유형 → 명세서 Enum/jobId·jobName 변환해서 전송 */
-export async function createQuestions(jobLabel, qtypeLabel) {
-  const jobPart = JOB_MAP[jobLabel];          // { jobId } 또는 { jobName }
-  const questionType = QTYPE_MAP[qtypeLabel]; 
+export async function createQuestions(jobLabel, qtypeLabel, opts = {}) {
+  const jobPart = JOB_MAP[jobLabel];
+  const questionType = QTYPE_MAP[qtypeLabel];
 
   if (!jobPart) throw new Error(`매핑 안 된 직무: ${jobLabel}`);
   if (!questionType) throw new Error(`매핑 안 된 질문유형: ${qtypeLabel}`);
 
-  // 더미 폴백 없음 — 실패하면 그대로 위로 던져서 화면에서 처리
+  const body = { ...jobPart, questionType };
+  if (opts.mode) body.mode = opts.mode;        // "텍스트" | "스피킹"
+  if (opts.isChallenge) body.count = 1;         // 도전모드 신호 → 백엔드가 자동으로 "도전" 처리
+
   return await req("/api/interview/questions", {
     method: "POST",
-    body: { ...jobPart, questionType },
+    body,
   });
 }
-
 /* ── 2. 답변 평가 ───────────────────────────────
    extra = { sessionId, smileCount, eyeContactRatio } (스피킹만) */
 export async function evaluateAnswer({ questionId, question, answer, questionType, extra }) {
   const body = { questionId, question, answer, questionType, ...(extra || {}) };
-  try {
-    return await req("/api/interview/feedback", { method: "POST", body });
-  } catch (e) {
-    console.warn("[api] 평가 실패 → 더미 폴백:", e.message);
-    const dummy = FEEDBACK.perQ[(question?.length || 0) % 5] || FEEDBACK.perQ[0];
-    return {
-      answerId: null,
-      questionType,
-      score: dummy.score,
-      strengths: [dummy.strength],
-      improvements: [dummy.improve],
-      suggestion: dummy.suggest,
-    };
-  }
+  // 더미 폴백 없음 — 실패하면 그대로 위로 던져서 화면에서 처리
+  return await req("/api/interview/feedback", { method: "POST", body });
 }
 
 /* ── 3~6. 마이페이지 (4차에서 화면 연결) ───────── */

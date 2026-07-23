@@ -32,12 +32,12 @@ export default function Setup() {
     setLoading(true);
     setErr("");
     setConfig({ field, job, qtype, itype });
-    // 새 면접 시작이니 이전 면접 결과·표정 통계 초기화
     setFeedbacks([]);
     setFaceStats(null);
     try {
-      const data = await createQuestions(job, qtype);  // 실패하면 catch로 던져짐
-      setSession(data);  // { sessionId, questions[] } 보관
+      const modeLabel = mode === "speaking" ? "스피킹" : "텍스트";
+      const data = await createQuestions(job, qtype, { mode: modeLabel });
+      setSession(data);
       navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
     } catch (e) {
       console.error("[Setup] 질문 생성 오류:", e);
@@ -104,7 +104,7 @@ export default function Setup() {
             {ready ? `${job} · ${qtype} · ${itype}` : "분야 · 직무 · 질문 유형을 선택해주세요"}
           </span>
           <Btn variant="accent" disabled={!ready || loading} onClick={onStart} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
-            {loading ? "질문 준비 중…" : <>면접 시작 <Icon.arrow size={18} /></>}
+            {loading ? "질문 준비 중" : <>면접 시작 <Icon.arrow size={18} /></>}
           </Btn>
         </div>
       </Card>

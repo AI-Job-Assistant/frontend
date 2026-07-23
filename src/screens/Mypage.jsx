@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, GROWTH } from "../styles/tokens";
-import { SproutBadge, Icon } from "../components/Characters";
+import { GrowthBadge, Icon } from "../components/Characters";
 import { Card, Eyebrow } from "../components/UI";
 import { Shell, TopBar } from "../components/Layout";
 import { useApp } from "../AppContext";
@@ -52,6 +52,25 @@ function buildMonthGrid(year, month, dayCounts) {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/* 면접 모드 뱃지 스타일 */
+const MODE_STYLE = {
+  텍스트: { bg: T.mist, color: T.forest },
+  스피킹: { bg: "#EAF0E3", color: "#4C6B3E" },
+  도전:   { bg: T.amberSoft, color: T.amber },
+};
+
+function ModeBadge({ mode }) {
+  const style = MODE_STYLE[mode] || MODE_STYLE["텍스트"];
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+      background: style.bg, color: style.color, flexShrink: 0,
+    }}>
+      {mode || "텍스트"}
+    </span>
+  );
+}
 
 export default function Mypage() {
   const navigate = useNavigate();
@@ -149,9 +168,9 @@ export default function Mypage() {
     <Shell>
       <TopBar showMypage={false} />
 
-      {/* 헤더 — 프로필 */}
+      {/* 헤더 — 프로필 (평균 점수 연동 성장 배지) */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 20px" }}>
-        <SproutBadge size={54} />
+        <GrowthBadge score={stats?.avgScore ?? 0} size={54} />
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: T.ink }}>
             {studentId} <span style={{ fontSize: 15, fontWeight: 600, color: T.inkMid }}>님</span>
@@ -252,7 +271,10 @@ export default function Mypage() {
               background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
             }}>
               <div>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink }}>{h.jobName} · {h.questionType}</div>
+                <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink, display: "flex", alignItems: "center", gap: 6 }}>
+                  <ModeBadge mode={h.mode} />
+                  {h.jobName} · {h.questionType}
+                </div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>
                   {h.createdAt ? new Date(h.createdAt).toLocaleDateString("ko-KR") : "날짜 없음"} · {h.durationMin != null ? `${h.durationMin}분` : "기록 없음"}
                 </div>

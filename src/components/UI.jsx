@@ -1,14 +1,27 @@
 import React, { memo } from "react";
 import { T } from "../styles/tokens";
 import { Sprout } from "./Characters";
+import logoImg from "../assets/logo.png";
 
-/* 로고 — 워드마크 + 미니 새싹 */
+/* 로고 — 워드마크 + 미니 새싹 (컴팩트, TopBar용) */
 export const Logo = memo(function Logo({ onClick }) {
   return (
     <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 9, cursor: onClick ? "pointer" : "default" }}>
       <Sprout size={26} />
       <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em", color: T.ink }}>새싹</span>
     </div>
+  );
+});
+
+/* 풀 로고 이미지 — 로그인/회원가입 브랜드 패널 등 넓은 공간용 */
+export const LogoFull = memo(function LogoFull({ onClick, height = 32 }) {
+  return (
+    <img
+      src={logoImg}
+      alt="새싹 — AI 취업 준비 도우미"
+      onClick={onClick}
+      style={{ height, width: "auto", display: "block", cursor: onClick ? "pointer" : "default" }}
+    />
   );
 });
 

@@ -26,7 +26,7 @@ export default function ChallengeModal({ onClose }) {
     setStep("loading");
     setErr("");
     try {
-      const data = await createQuestions(job, qtype);
+      const data = await createQuestions(job, qtype, { isChallenge: true });
       // 질문 5개 중 랜덤 1개 선택
       const idx = Math.floor(Math.random() * data.questions.length);
       setQuestion(data.questions[idx]);
@@ -51,6 +51,7 @@ export default function ChallengeModal({ onClose }) {
         question: question.content,
         answer,
         questionType: QTYPE_MAP[qtype] || qtype,
+        extra: { sessionType: "challenge" },
       });
       setFeedback(result);
       setStep("result");
