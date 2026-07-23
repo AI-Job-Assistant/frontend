@@ -33,13 +33,31 @@ export const T = {
 /* 점수 → 성장 단계 색 (잔디/새싹 공용) — 민트~딥그린 */
 export const GROWTH = ["#D9E6D0", "#B8E0C8", "#7FCBA4", "#46A578", "#1F6B4A"];
 
-/* 점수 → 성장 단계 (0~4). Mypage 프로필 배지, Result 아코디언 뱃지 공용 */
+/* 점수 → 성장 단계 (0~4). 배지 "색상"에 사용 */
 export function growthStageFor(score) {
   if (score >= 90) return 4;
   if (score >= 80) return 3;
   if (score >= 70) return 2;
   if (score >= 60) return 1;
   return 0;
+}
+
+/* 성장 단계 진입 기준 횟수 (1회→잎사귀, 5회→어린나무, 15회→큰나무 진입 시작...) */
+const SESSION_THRESHOLDS = [1, 5, 15, 30];
+
+/* 연습 횟수 → 성장 단계 (0~4, 성장 이미지용). 점수는 배지 "색상"에만 사용 */
+export function growthStageForSessions(count) {
+  if (count >= SESSION_THRESHOLDS[3]) return 4;
+  if (count >= SESSION_THRESHOLDS[2]) return 3;
+  if (count >= SESSION_THRESHOLDS[1]) return 2;
+  if (count >= SESSION_THRESHOLDS[0]) return 1;
+  return 0;
+}
+
+/* 다음 성장 단계까지 남은 연습 횟수 (이미 최고 단계면 null) */
+export function sessionsToNextStage(count) {
+  const next = SESSION_THRESHOLDS.find((t) => count < t);
+  return next == null ? null : next - count;
 }
 
 /* ── 직무: 분야 → 세부 직무 ── */

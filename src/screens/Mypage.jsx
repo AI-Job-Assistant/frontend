@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { T, GROWTH } from "../styles/tokens";
+import { T, GROWTH, sessionsToNextStage } from "../styles/tokens";
 import { GrowthBadge, Icon } from "../components/Characters";
 import { Card, Eyebrow } from "../components/UI";
 import { Shell, TopBar } from "../components/Layout";
@@ -24,6 +24,19 @@ function scoreBand(s) {
   if (s >= 70) return 2;
   if (s >= 60) return 1;
   return 0;
+}
+
+/* 오늘(또는 어제)부터 거슬러 올라가며 연속 연습일 계산 */
+function calcStreak(dayCounts, today) {
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  let cursor = new Date(today);
+  if (!dayCounts[fmt(cursor)]) cursor.setDate(cursor.getDate() - 1); // 오늘 기록 없으면 어제부터 확인
+  let streak = 0;
+  while (dayCounts[fmt(cursor)]) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
 /* history(날짜) → 날짜별 면접 횟수 맵 { "2026-07-22": 2, ... } */
@@ -164,19 +177,30 @@ export default function Mypage() {
     return { year: d.getFullYear(), month: d.getMonth() };
   });
 
+  const streak = calcStreak(dayCounts, today);
+  const remaining = sessionsToNextStage(stats?.totalSessions ?? 0);
+
   return (
     <Shell>
       <TopBar showMypage={false} />
 
-      {/* 헤더 — 프로필 (평균 점수 연동 성장 배지) */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 20px" }}>
-        <GrowthBadge score={stats?.avgScore ?? 0} size={54} />
+      {/* 헤더 — 프로필 (연습 횟수 기준 성장 이미지 + 점수 기준 배지 색상) */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 8px" }}>
+        <GrowthBadge score={stats?.avgScore ?? 0} count={stats?.totalSessions ?? 0} size={54} />
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: T.ink }}>
             {studentId} <span style={{ fontSize: 15, fontWeight: 600, color: T.inkMid }}>님</span>
           </div>
-          <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 2 }}>데이터 분석가 · 신입 · 가입 2개월차</div>
+          <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 2 }}>
+            {streak > 0 ? ` ${streak}일 연속 연습 중` : "오늘부터 연습을 시작해보세요"}
+            {remaining != null ? ` · 다음 단계까지 ${remaining}회 남았어요` : " · 최고 단계 도달! 🌳"}
+          </div>
         </div>
+      </div>
+
+      {/* 성장 배지 설명 문구 */}
+      <div style={{ fontSize: 12.5, color: T.inkSoft, margin: "0 0 20px 2px" }}>
+        연습 횟수가 늘어날수록 새싹이 나무로 성장합니다! 큰 나무가 될 때까지 함께해요.
       </div>
 
       {/* 통계 3칸 */}

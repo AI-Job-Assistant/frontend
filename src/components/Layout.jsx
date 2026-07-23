@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { T } from "../styles/tokens";
-import { Logo, Btn } from "./UI";
+import { Logo, LogoFull, Btn } from "./UI";
 import { Icon } from "./Characters";
 import { useApp } from "../AppContext";
 import { motion } from "framer-motion";
@@ -45,7 +45,7 @@ export function TopBar({ showMypage = true, onQuit })  {
       display: "flex", justifyContent: "space-between", alignItems: "center",
       padding: "8px 0 20px", marginBottom: 12, borderBottom: `1px solid ${T.line}`,
     }}>
-      <Logo onClick={onQuit || (() => navigate("/"))} />
+      <LogoFull height={33} onClick={onQuit || (() => navigate("/"))} />
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {studentId && (
           <span style={{

@@ -1,5 +1,5 @@
 import React from "react";
-import { T, GROWTH, growthStageFor } from "../styles/tokens";
+import { T, GROWTH, growthStageFor, growthStageForSessions } from "../styles/tokens";
 import sproutImg from "../assets/sprout.png";
 import sprout1 from "../assets/sprout-1-seedling.png";
 import sprout2 from "../assets/sprout-2-leaf.png";
@@ -38,11 +38,12 @@ export function SproutBadge({ size = 52, bg = T.mist, pad = 0.18 }) {
    0·1단계는 둘 다 "새싹" 이미지 사용, 2단계부터 잎사귀/어린나무/큰나무 */
 const STAGE_IMG = [sprout1, sprout1, sprout2, sprout3, sprout4];
 
-export function GrowthBadge({ score = 0, size = 54 }) {
-  const stage = growthStageFor(score);
+export function GrowthBadge({ score = 0, count = 0, size = 54 }) {
+  const stage = growthStageForSessions(count); // 성장 이미지 — 연습 횟수 기준
+  const colorStage = growthStageFor(score);    // 배지 색상 — 점수 기준
   return (
     <div style={{
-      width: size, height: size, borderRadius: "50%", background: GROWTH[stage],
+      width: size, height: size, borderRadius: "50%", background: GROWTH[colorStage],
       display: "grid", placeItems: "center", flex: "0 0 auto", overflow: "hidden",
     }}>
       <img

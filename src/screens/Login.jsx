@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T } from "../styles/tokens";
 import { SproutBadge } from "../components/Characters";
-import { Field, Btn, Eyebrow } from "../components/UI";
+import { Field, Btn, Eyebrow, LogoFull } from "../components/UI";
 import { signIn, authErrorMessage } from "../auth";
 import { useApp } from "../AppContext";
 import { Shell, TopBar } from "../components/Layout";
@@ -41,7 +41,9 @@ export default function Login() {
           display: "flex", flexDirection: "column", justifyContent: "space-between",
           position: "relative", overflow: "hidden",
         }} className="auth-brand">
-          <Eyebrow color="#A6C295">AI Interview Coach</Eyebrow>
+          <div style={{ width: "fit-content", filter: "brightness(0) invert(1)", opacity: 0.95 }}>
+            <LogoFull height={50} />
+          </div>
           <div>
             <SproutBadge size={72} bg="rgba(255,255,255,0.16)" />
             <h1 style={{ fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, margin: "20px 0 14px" }}>

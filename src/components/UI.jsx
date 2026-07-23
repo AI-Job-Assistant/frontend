@@ -13,15 +13,28 @@ export const Logo = memo(function Logo({ onClick }) {
   );
 });
 
-/* 풀 로고 이미지 — 로그인/회원가입 브랜드 패널 등 넓은 공간용 */
+/* 풀 로고 — 마크 이미지 + 실제 텍스트 (비율 항상 유지) */
 export const LogoFull = memo(function LogoFull({ onClick, height = 32 }) {
   return (
-    <img
-      src={logoImg}
-      alt="새싹 — AI 취업 준비 도우미"
+    <div
       onClick={onClick}
-      style={{ height, width: "auto", display: "block", cursor: onClick ? "pointer" : "default" }}
-    />
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: height * 0.28,
+        cursor: onClick ? "pointer" : "default",
+      }}
+    >
+      <img
+        src={logoImg}
+        alt="새싹"
+        style={{ height, width: "auto", display: "block" }}
+      />
+      <span style={{ fontSize: height * 0.49, fontWeight: 800, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+        <span style={{ color: T.sage }}>AI</span>
+        <span style={{ color: T.forest, marginLeft: 6 }}>취업 준비 도우미</span>
+      </span>
+    </div>
   );
 });
 
