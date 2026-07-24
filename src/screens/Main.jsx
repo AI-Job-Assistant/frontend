@@ -22,9 +22,14 @@ const MODES = [
 
 export default function Main() {
   const navigate = useNavigate();
-  const { setMode } = useApp();
+  const { setMode, prewarmCamera } = useApp();
   const [showChallenge, setShowChallenge] = useState(false);
-  const startInterview = (m) => { setMode(m); navigate("/setup"); };
+
+  const startInterview = (m) => {
+    setMode(m);
+    if (m === "speaking") prewarmCamera(); // 스피킹 고르자마자 카메라 권한 미리 요청
+    navigate("/setup");
+  };
 
   return (
     <Shell>

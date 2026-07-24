@@ -81,6 +81,10 @@ export default function Result() {
               <div style={{ fontSize: 12, color: T.inkSoft }}>응시</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.ink }}>{faceStats.gazeRate}%</div>
             </div>
+            <div>
+              <div style={{ fontSize: 12, color: T.inkSoft }}>무표정</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.ink }}>{faceStats.neutralRate}%</div>
+            </div>
           </div>
         </Card>
       )}

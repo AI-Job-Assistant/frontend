@@ -14,7 +14,10 @@ const SR = typeof window !== "undefined"
 
 export default function SpeakInterview() {
     const navigate = useNavigate();
-    const { config, session, setFaceStats, setAnswers: setSessionAnswers, setTotalSec } = useApp();
+    const {
+        config, session, setFaceStats, setAnswers: setSessionAnswers, setTotalSec,
+        cameraPrewarmed, consumePrewarmedCamera, releasePrewarmedCamera,
+    } = useApp();
 
     const qList = session?.questions || QUESTIONS.map((content, i) => ({ id: null, content }));
     const questions = qList.map((q) => q.content);
@@ -31,7 +34,7 @@ export default function SpeakInterview() {
     const [started, setStarted] = useState(false);
     const [sec, reset] = useTimer(timerRunning);
     const [showQuit, setShowQuit] = useState(false);
-    const [showCamGuide, setShowCamGuide] = useState(true);
+    const [showCamGuide, setShowCamGuide] = useState(!cameraPrewarmed); // 예열 중이면 안내 모달 스킵
     const [noCam, setNoCam] = useState(false);
     const [showNoCamModal, setShowNoCamModal] = useState(false);
     const last = idx === total - 1;
@@ -52,18 +55,31 @@ export default function SpeakInterview() {
     const startCamera = async () => {
         if (streamRef.current) return;
         try {
-            if (!camIdRef.current) {
-                const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                probe.getTracks().forEach((t) => t.stop());
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const cams = devices.filter((d) => d.kind === "videoinput");
-                const real = cams.find((c) => !/virtual|mirametrix|obs|snap/i.test(c.label)) || cams[0];
-                camIdRef.current = real?.deviceId || null;
+            // Main에서 미리 예열해둔 스트림이 있으면(완료든 진행 중이든) 그대로 재사용
+            let stream = await consumePrewarmedCamera();
+
+            if (!stream) {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: camIdRef.current ? { deviceId: { exact: camIdRef.current } } : true,
+                    audio: true, // 마이크도 같이 요청 → 권한 팝업이 한 번에 뜸
+                });
             }
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: camIdRef.current ? { deviceId: { exact: camIdRef.current } } : true,
-                audio: true, // 마이크도 같이 요청 → 권한 팝업이 한 번에 뜸
-            });
+
+            // 가상 카메라(OBS 등)로 잡혔을 때만 실제 카메라로 한 번 더 전환 (드문 경우)
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack && /virtual|mirametrix|obs|snap/i.test(videoTrack.label) && !camIdRef.current) {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const real = devices.find((d) => d.kind === "videoinput" && !/virtual|mirametrix|obs|snap/i.test(d.label));
+                if (real) {
+                    stream.getTracks().forEach((t) => t.stop());
+                    camIdRef.current = real.deviceId;
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: real.deviceId } },
+                        audio: true,
+                    });
+                }
+            }
+
             streamRef.current = stream;
             setCamReady(true);
             attachStream();
@@ -91,7 +107,13 @@ export default function SpeakInterview() {
     useEffect(() => () => { streamRef.current?.getTracks().forEach((t) => t.stop()); }, []);
     useEffect(() => { resetStats(); }, []);
 
-    // 카메라는 안내 모달에서 '시작하기'를 눌렀을 때 켜짐 (아래 showCamGuide onConfirm 참고)
+    // 카메라는 보통 안내 모달에서 '시작하기'를 눌렀을 때 켜짐 (아래 showCamGuide onConfirm 참고).
+    // 단, Main에서 이미 예열이 시작된 상태로 들어왔다면 모달 없이 곧바로 연결한다.
+    useEffect(() => {
+        if (cameraPrewarmed && !noCam) startCamera();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     useEffect(() => {
         return () => stopCamera();
     }, []);
@@ -247,9 +269,9 @@ export default function SpeakInterview() {
                 desc="면접 진행을 위해 카메라와 마이크 접근 권한이 필요해요. 브라우저 팝업에서 '허용'을 눌러주세요."
                 onConfirm={() => {
                     setShowCamGuide(false);
-                    if (!noCam) startCamera(); // 여기서 실제 권한 요청 발생
+                    if (!noCam) startCamera();
                 }}
-                onCancel={() => navigate("/")}
+                onCancel={() => { releasePrewarmedCamera(); navigate("/"); }}
                 confirmText="시작하기"
                 cancelText="돌아가기"
             />
@@ -303,7 +325,7 @@ export default function SpeakInterview() {
 
                 {/* 카메라 프리뷰 */}
                 <div style={{
-                    position: "relative", margin: "0 auto 18px", width: "100%", maxWidth: 380, aspectRatio: "16/9",
+                    position: "relative", margin: "0 auto 18px", width: "100%", maxWidth: 520, aspectRatio: "16/9",
                     borderRadius: 12, background: T.surfaceAlt, border: `1px solid ${T.line}`,
                     overflow: "hidden", color: T.inkFaint,
                 }}>
@@ -351,6 +373,7 @@ export default function SpeakInterview() {
                             <span>😊 {faceStats.smiles}회</span>
                             <span style={{ color: detection ? "#7FCBA4" : "#F87171" }}>{detection ? "👁 응시 중" : "👁 이탈"}</span>
                             <span> {faceStats.gazeRate}%</span>
+                            <span>😐 {faceStats.neutralRate}%</span>
                         </span>
                     )}
                 </div>
@@ -359,9 +382,9 @@ export default function SpeakInterview() {
                 {recording && (
                     <canvas
                         ref={canvasRef}
-                        width={380}
+                        width={520}
                         height={60}
-                        style={{ width: "100%", maxWidth: 380, borderRadius: 8, background: T.mist, marginBottom: 12 }}
+                        style={{ width: "100%", maxWidth: 520, borderRadius: 8, background: T.mist, marginBottom: 12 }}
                     />
                 )}
 

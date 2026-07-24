@@ -28,10 +28,17 @@ function isLookingAtCamera(landmarks) {
   return offset < 0.12;
 }
 
+/* 그 프레임에서 가장 확률 높은 표정이 'neutral'인지 판별 (무표정 비율 계산용) */
+function isNeutralExpression(expressions) {
+  const entries = Object.entries(expressions);
+  const dominant = entries.reduce((max, cur) => (cur[1] > max[1] ? cur : max), entries[0]);
+  return dominant[0] === "neutral";
+}
+
 export function useFaceAnalysis(videoRef, active, accumActive = false) {
-  const [stats, setStats] = useState({ smiles: 0, gazeRate: 0 });
+  const [stats, setStats] = useState({ smiles: 0, gazeRate: 0, neutralRate: 0 });
   const [detection, setDetection] = useState(null);
-  const accum = useRef({ frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false });
+  const accum = useRef({ frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false, neutralFrames: 0 });
   const timerId = useRef(null);
   const ready = useRef(false);
 
@@ -57,6 +64,7 @@ export function useFaceAnalysis(videoRef, active, accumActive = false) {
             const a = accum.current;
             a.frames++;
             if (isLookingAtCamera(result.landmarks)) a.gazeFrames++;
+            if (isNeutralExpression(result.expressions)) a.neutralFrames++;
             const happy = result.expressions.happy;
             if (happy > 0.7) {
               if (!a.wasSmiling) { a.smiles++; a.wasSmiling = true; }
@@ -66,6 +74,7 @@ export function useFaceAnalysis(videoRef, active, accumActive = false) {
             setStats({
               smiles: a.smiles,
               gazeRate: Math.round((a.gazeFrames / a.frames) * 100),
+              neutralRate: Math.round((a.neutralFrames / a.frames) * 100),
             });
           }
           setDetection(result.detection.box);
@@ -81,8 +90,8 @@ export function useFaceAnalysis(videoRef, active, accumActive = false) {
   }, [active, videoRef, accumActive]);
 
   const resetStats = () => {
-    accum.current = { frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false };
-    setStats({ smiles: 0, gazeRate: 0 });
+    accum.current = { frames: 0, gazeFrames: 0, smiles: 0, wasSmiling: false, neutralFrames: 0 };
+    setStats({ smiles: 0, gazeRate: 0, neutralRate: 0 });
   };
   return { stats, resetStats, detection };
 }
