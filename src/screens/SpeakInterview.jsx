@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { T, QUESTIONS } from "../styles/tokens";
 import { Card, Btn, Eyebrow } from "../components/UI";
 import { Icon } from "../components/Characters";
-import { Shell, TopBar, Progress, Timer, useTimer, ConfirmModal } from "../components/Layout";
+import { Shell, TopBar, Progress, Timer, useTimer, ConfirmModal, useCountdown } from "../components/Layout";
 import { useApp } from "../AppContext";
 import { useFaceAnalysis } from "../components/useFaceAnalysis";
 
@@ -33,10 +33,19 @@ export default function SpeakInterview() {
     const [timerRunning, setTimerRunning] = useState(false);
     const [started, setStarted] = useState(false);
     const [sec, reset] = useTimer(timerRunning);
+    const isPressure = config?.itype === "압박 면접";
+    const { sec: cdSec, start: cdStart } = useCountdown(120, () => {
+        if (isPressure) setShowTimeUp(true);
+    });
     const [showQuit, setShowQuit] = useState(false);
     const [showCamGuide, setShowCamGuide] = useState(!cameraPrewarmed); // 예열 중이면 안내 모달 스킵
+    const [showPressureGuide, setShowPressureGuide] = useState(isPressure);
+    const [showTimeUp, setShowTimeUp] = useState(false);
+    const [extraCount, setExtraCount] = useState(Array(total).fill(0));
+    const [totalPenalty, setTotalPenalty] = useState(0);
     const [noCam, setNoCam] = useState(false);
     const [showNoCamModal, setShowNoCamModal] = useState(false);
+    
     const last = idx === total - 1;
 
     const videoRef = useRef(null);
@@ -93,7 +102,7 @@ export default function SpeakInterview() {
         const s = streamRef.current;
         if (!v || !s) return;
         if (v.srcObject !== s) v.srcObject = s;
-        v.play().catch(() => {});
+        v.play().catch(() => { });
     };
 
     const stopCamera = () => {
@@ -106,6 +115,9 @@ export default function SpeakInterview() {
     useEffect(() => { if (camReady) attachStream(); }, [camReady, idx, recording]);
     useEffect(() => () => { streamRef.current?.getTracks().forEach((t) => t.stop()); }, []);
     useEffect(() => { resetStats(); }, []);
+    useEffect(() => {
+        if (isPressure && !showPressureGuide && !showCamGuide) cdStart(120);
+    }, [idx]);
 
     // 카메라는 보통 안내 모달에서 '시작하기'를 눌렀을 때 켜짐 (아래 showCamGuide onConfirm 참고).
     // 단, Main에서 이미 예열이 시작된 상태로 들어왔다면 모달 없이 곧바로 연결한다.
@@ -157,7 +169,7 @@ export default function SpeakInterview() {
             if (e.error === "not-allowed") setError("마이크 권한을 허용해주세요.");
             else if (e.error === "no-speech") setError("음성이 감지되지 않았어요. 다시 시도해주세요.");
         };
-        r.onend = () => { if (recogRef.current?._active) { try { r.start(); } catch {} } };
+        r.onend = () => { if (recogRef.current?._active) { try { r.start(); } catch { } } };
         return r;
     };
 
@@ -184,10 +196,10 @@ export default function SpeakInterview() {
                 analyserRef.current = analyser;
                 drawWave();
             }
-        } catch {}
+        } catch { }
         r._active = true;
         recogRef.current = r;
-        try { r.start(); } catch {}
+        try { r.start(); } catch { }
     };
 
     const drawWave = () => {
@@ -217,7 +229,7 @@ export default function SpeakInterview() {
     };
 
     const stop = () => {
-        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
+        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch { } }
         // 카메라는 계속 켜둠 — 질문 넘어갈 때마다 재요청되지 않도록
         cancelAnimationFrame(animFrameRef.current);
         audioCtxRef.current?.close();
@@ -230,7 +242,7 @@ export default function SpeakInterview() {
     };
 
     const retake = () => {
-        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
+        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch { } }
         // 카메라는 계속 켜둠
         finalRef.current = "";
         setRecording(false);
@@ -241,11 +253,12 @@ export default function SpeakInterview() {
     };
 
     const next = () => {
-        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch {} }
+        if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch { } }
         if (last) {
             stopCamera();
             setFaceStats(faceStats);
             setTotalSec(sec);
+            sessionStorage.setItem("penalty", totalPenalty);
             setTimerRunning(false);
             setSessionAnswers(
                 qList.map((q, i) => ({
@@ -276,6 +289,36 @@ export default function SpeakInterview() {
                 cancelText="돌아가기"
             />
             <ConfirmModal
+            open={showPressureGuide && !showCamGuide}
+            title="압박 면접 안내"
+            desc="각 질문당 2분 제한이 있어요. 30초 추가는 문제당 최대 2번 가능하며, 추가 1회당 최종 점수에서 3점 감점돼요."
+            onConfirm={() => { setShowPressureGuide(false); cdStart(120); }}
+            onCancel={() => navigate("/")}
+            confirmText="시작하기"
+            cancelText="돌아가기"
+            />
+            <ConfirmModal
+            open={showTimeUp}
+            title="시간이 초과됐어요!"
+            desc={extraCount[idx] >= 2 ? "이미 2번 추가했어요. 다음 문제로 넘어갈게요." : "30초를 추가할 수 있어요. (" + extraCount[idx] + "/2회)\n추가 시 3점이 감점돼요."}
+            onConfirm={() => {    
+                setShowTimeUp(false);
+                if (extraCount[idx] < 2) {
+                    const newCount = [...extraCount];
+                    newCount[idx] += 1;
+                    setExtraCount(newCount);
+                    setTotalPenalty((p) => p + 1);
+                    cdStart(30);
+                } else {
+                    next();
+                }
+            }}
+            onCancel={() => { setShowTimeUp(false); next(); }}
+            confirmText={extraCount[idx] >= 2 ? "다음 문제로" : "30초 추가"}
+            cancelText={extraCount[idx] >= 2 ? "" : "다음 문제로"}
+            />
+
+            <ConfirmModal
                 open={showQuit}
                 title="면접을 중단할까요?"
                 desc="지금 나가면 진행 중인 답변이 저장되지 않아요."
@@ -304,7 +347,18 @@ export default function SpeakInterview() {
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 0 18px" }}>
                 <span style={{ fontSize: 12.5, color: T.inkSoft, fontWeight: 600 }}>{config?.job} · {config?.qtype}</span>
+                {isPressure ? (
+                    <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        fontVariantNumeric: "tabular-nums", fontSize: 14, fontWeight: 700,
+                        color: cdSec <= 30 ? "#B5503A" : T.inkMid, letterSpacing: "0.02em",
+                    }}>
+                        <Icon.clock size={15} />
+                        {String(Math.floor(cdSec / 60)).padStart(2, "0")}:{String(cdSec % 60).padStart(2, "0")}
+                    </span>
+                ) : (
                 <Timer sec={sec} />
+            )}
             </div>
             <Progress idx={idx} />
 

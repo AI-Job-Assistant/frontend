@@ -108,6 +108,37 @@ export function useTimer(running) {
   return [sec, () => setSec(0)];
 }
 
+/* 카운트다운 타이머 훅 */
+export function useCountdown(initialSec, onExpire) {
+  const [sec, setSec] = useState(initialSec);
+  const ref = useRef(null);
+
+  const start = (s) => {
+    if (ref.current) clearInterval(ref.current);
+    setSec(s ?? initialSec);
+    ref.current = setInterval(() => {
+      setSec((prev) => {
+        if (prev <= 1) {
+          clearInterval(ref.current);
+          onExpire?.();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const stop = () => {
+    if (ref.current) clearInterval(ref.current);
+  };
+
+  useEffect(() => {
+    return () => { if (ref.current) clearInterval(ref.current); };
+  }, []);
+
+  return { sec, start, stop };
+}
+
 export function fmt(s) {
   const m = String(Math.floor(s / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");

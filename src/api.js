@@ -45,6 +45,7 @@ export async function createQuestions(jobLabel, qtypeLabel, opts = {}) {
   const body = { ...jobPart, questionType };
   if (opts.mode) body.mode = opts.mode;        // "텍스트" | "스피킹"
   if (opts.isChallenge) body.count = 1;         // 도전모드 신호 → 백엔드가 자동으로 "도전" 처리
+  if (opts.interviewStyle) body.interviewStyle = opts.interviewStyle; // "압박 면접" | "일반 면접" 
 
   return await req("/api/interview/questions", {
     method: "POST",

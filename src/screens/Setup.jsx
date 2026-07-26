@@ -36,7 +36,10 @@ export default function Setup() {
     setFaceStats(null);
     try {
       const modeLabel = mode === "speaking" ? "스피킹" : "텍스트";
-      const data = await createQuestions(job, qtype, { mode: modeLabel });
+      const data = await createQuestions(job, qtype, {
+        mode: modeLabel,
+        interviewStyle: itype === "압박 면접" ? "압박" : undefined,
+      });
       setSession(data);
       navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
     } catch (e) {
