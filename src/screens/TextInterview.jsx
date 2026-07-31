@@ -165,10 +165,7 @@ export default function TextInterview() {
         <div style={{ textAlign: "right", fontSize: 12, color: T.inkFaint, marginTop: 6 }}>
           {answers[idx].length}자
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
-          <Btn variant="ghost" onClick={() => setRunning((r) => !r)}>
-            {running ? "일시정지" : "다시 시작"}
-          </Btn>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 18 }}>
           <Btn variant={last ? "accent" : "primary"} onClick={next}>
             {last ? "제출하기" : "다음"}
           </Btn>
