@@ -258,6 +258,7 @@ export default function SpeakInterview() {
             stopCamera();
             setFaceStats(faceStats);
             setTotalSec(sec);
+            sessionStorage.setItem("extraCount", JSON.stringify(extraCount));
             sessionStorage.setItem("penalty", totalPenalty);
             setTimerRunning(false);
             setSessionAnswers(

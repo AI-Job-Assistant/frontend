@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, QTYPE_MAP } from "../styles/tokens";
-import { evaluateAnswer } from "../api";
+import { evaluateAnswer , completeInterview} from "../api";
 import { Sprout } from "../components/Characters";
 import { Centered } from "../components/Layout";
 import { Btn } from "../components/UI";
@@ -56,6 +56,7 @@ export default function Loading() {
         ranRef.current = false; // 다시 시도 가능하게
         return; // 결과 화면으로 안 넘어가게
       }
+      
       navigate("/result", { replace: true });
     })();
   }, []);  // 마운트 시 1회

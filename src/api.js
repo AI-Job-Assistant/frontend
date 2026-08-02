@@ -65,3 +65,6 @@ export const getStats    = () => req("/api/mypage/stats");
 export const getHistory  = () => req("/api/mypage/history");
 export const getHeatmap  = () => req("/api/mypage/heatmap");
 export const getAnalysis = () => req("/api/mypage/analysis");
+
+export const completeInterview = (sessionId) =>
+  req("/api/interview/complete", { method: "POST", body: { sessionId } });

@@ -61,6 +61,7 @@ export default function TextInterview() {
     }));
     setSessionAnswers(payload);
     setTotalSec(sec);
+    sessionStorage.setItem("extraCount", JSON.stringify(extraCount));
     sessionStorage.setItem("penalty", totalPenalty);
     localStorage.removeItem("draft_answers");
     setRunning(false);

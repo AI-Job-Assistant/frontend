@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { T, GROWTH } from "../styles/tokens";
 import { SproutBadge, Icon } from "../components/Characters";
 import { Card, Btn, Eyebrow } from "../components/UI";
-import { Shell, TopBar } from "../components/Layout";
+import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
+import { completeInterview } from "../api";
 
 function stageFor(score) {
   if (score >= 90) return 4;
@@ -40,6 +41,9 @@ export default function Result() {
   const navigate = useNavigate();
   const { config, faceStats, feedbacks, session, totalSec, answers } = useApp();
   const [open, setOpen] = useState(0); // 펼쳐진 질문 인덱스
+  const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+  const penalty = Number(sessionStorage.getItem("penalty") || 0);
+  const extraCount = JSON.parse(sessionStorage.getItem("extraCount") || "[]");
 
   const data = normalize(feedbacks, session);
 
@@ -47,12 +51,23 @@ export default function Result() {
     <Shell>
       <TopBar />
 
+      <ConfirmModal
+      open={showRetryConfirm}
+      title="다시 도전하기"
+      desc="점수와 피드백이 기록되지 않고 새로운 면접을 시작해요. 계속하시겠어요?"
+      onConfirm={() => { setShowRetryConfirm(false); navigate("/setup"); }}
+      onCancel={() => setShowRetryConfirm(false)}
+      confirmText="계속하기"
+      cancelText="취소하기"
+      />
+
       <div style={{ margin: "24px 0 22px" }}>
         <Eyebrow>Result</Eyebrow>
         <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.025em", color: T.ink, margin: "8px 0 4px" }}>면접 결과</h1>
         <p style={{ fontSize: 14, color: T.inkSoft, margin: 0 }}>
           {config?.job} · {config?.qtype}
           {totalSec > 0 && ` · ${Math.floor(totalSec / 60)}분 ${totalSec % 60}초`}
+          {penalty > 0 && <span style={{ color: "#B5503A", marginLeft: 8 }}>⚠️ 감점 -{penalty * 3}점</span>}
         </p>
       </div>
 
@@ -130,6 +145,16 @@ export default function Result() {
                     </div>
                   </div>
                 )}
+                {extraCount[i] > 0 && (
+                  <div style={{
+                    padding: "8px 12px", borderRadius: 8, marginBottom: 8,
+                    background: "rgba(181,80,58,0.08)",
+                    fontSize: 13, color: "#B5503A", fontWeight: 600,
+                    }}>
+                      ⏱ 시간 초과 감점: {extraCount[i]}회 (-{extraCount[i] * 3}점)
+                    </div>
+                  )}
+                  
                 <FbBlock label="잘한 점" accent={T.forest} items={p.strengths} />
                 <FbBlock label="개선할 점" accent={T.amber} items={p.improvements} />
                 <FbBlock label="추천 답변 방향" accent={T.sage} items={[p.suggestion]} />
@@ -140,16 +165,26 @@ export default function Result() {
       </div>
 
       {/* 버튼 */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginBottom: 24 }}>
-        <Btn variant="outline" onClick={() => navigate("/mypage")}>
-          <Icon.chart size={17} /> 성장 기록
-        </Btn>
-        <Btn variant="outline" onClick={() => navigate("/setup")}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        {/* 왼쪽 */}
+        <Btn variant="ghost" onClick={() => setShowRetryConfirm(true)}>
           다시 도전하기
-        </Btn>
-        <Btn variant="primary" onClick={() => navigate("/")}>
-          새 면접
-        </Btn>
+          </Btn>
+        {/* 오른쪽 */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <Btn variant="outline" onClick={async () => {
+            if (session?.sessionId) await completeInterview(session.sessionId).catch(() => {});
+            navigate("/mypage");
+          }}>
+            <Icon.chart size={17} /> 성장 기록
+          </Btn>
+          <Btn variant="primary" onClick={async () => {
+            if (session?.sessionId) await completeInterview(session.sessionId).catch(() => {});
+            navigate("/");
+          }}>
+            새 면접
+          </Btn>
+        </div>
       </div>
     </Shell>
   );

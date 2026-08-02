@@ -298,6 +298,13 @@ export default function Mypage() {
                 <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink, display: "flex", alignItems: "center", gap: 6 }}>
                   <ModeBadge mode={h.mode} />
                   {h.jobName} · {h.questionType}
+                  {h.isIncomplete && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: "#B5503A",
+                      background: "rgba(181,80,58,0.1)", padding: "2px 8px",
+                      borderRadius: 20, letterSpacing: "0.02em",
+                    }}>미완료</span>
+                    )}
                 </div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>
                   {h.createdAt ? new Date(h.createdAt).toLocaleDateString("ko-KR") : "날짜 없음"} · {h.durationMin != null ? `${h.durationMin}분` : "기록 없음"}
