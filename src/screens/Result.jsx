@@ -31,6 +31,7 @@ function normalize(feedbacks, session) {
     strengths: Array.isArray(f.strengths) ? f.strengths : [f.strengths].filter(Boolean),
     improvements: Array.isArray(f.improvements) ? f.improvements : [f.improvements].filter(Boolean),
     suggestion: f.suggestion || "",
+    modelAnswer: f.modelAnswer || "",
   }));
   
   const avg = perQ.length > 0 ? Math.round(perQ.reduce((s, p) => s + p.score, 0) / perQ.length) : 0;
@@ -128,7 +129,9 @@ export default function Result() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: GROWTH[stageFor(p.score)] }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: T.forest, fontVariantNumeric: "tabular-nums" }}>{p.score}점</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: T.forest, fontVariantNumeric: "tabular-nums" }}>
+                  {p.score}점<span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 400 }}>/20</span>
+                </span>
                 <span style={{ color: T.inkFaint, fontSize: 12 }}>{open === i ? "▲" : "▼"}</span>
               </div>
             </button>
@@ -158,6 +161,25 @@ export default function Result() {
                 <FbBlock label="잘한 점" accent={T.forest} items={p.strengths} />
                 <FbBlock label="개선할 점" accent={T.amber} items={p.improvements} />
                 <FbBlock label="추천 답변 방향" accent={T.sage} items={[p.suggestion]} />
+                {/* 모범 답안 예시 */}
+                {p.modelAnswer && (
+                  <div style={{
+                    marginTop: 12, padding: "14px 16px",
+                    background: "rgba(59,130,246,0.05)",
+                    border: "1px solid rgba(59,130,246,0.2)",
+                    borderRadius: 10,
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 8 }}>
+                      STAR 기반 모범 답안 예시
+                    </div>
+                    <p style={{
+                      fontSize: 13.5, color: T.inkMid, lineHeight: 1.7,
+                      whiteSpace: "pre-line", margin: 0,
+                      }}>
+                      {p.modelAnswer}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </Card>

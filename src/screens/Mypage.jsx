@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { T, GROWTH, sessionsToNextStage } from "../styles/tokens";
 import { GrowthBadge, Icon } from "../components/Characters";
 import { Card, Eyebrow } from "../components/UI";
-import { Shell, TopBar } from "../components/Layout";
+import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
-import { getStats, getHistory, getAnalysis } from "../api";
+import { getStats, getHistory, getHeatmap, getAnalysis, completeInterview } from "../api";
 
 /* 잔디(달력) 색 단계 — "면접 횟수" 기준 */
 function band(count) {
@@ -94,6 +94,8 @@ export default function Mypage() {
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   useEffect(() => {
@@ -117,6 +119,26 @@ export default function Mypage() {
     }
     loadData();
   }, []);
+
+  const onComplete = async () => {
+  if (!selectedSessionId) return;
+  try {
+    await completeInterview(selectedSessionId);
+    // 데이터 새로고침
+    const [statsData, historyData, heatmapData, analysisData] = await Promise.all([
+      getStats(), getHistory(), getHeatmap(), getAnalysis(),
+    ]);
+    setStats(statsData);
+    setHistory(historyData);
+    setHeatmap(heatmapData);
+    setAnalysis(analysisData);
+  } catch (e) {
+    console.error("완료 처리 실패:", e);
+  } finally {
+    setShowCompleteConfirm(false);
+    setSelectedSessionId(null);
+  }
+};
 
   if (loading) {
     return (
@@ -183,6 +205,15 @@ export default function Mypage() {
   return (
     <Shell>
       <TopBar showMypage={false} />
+      <ConfirmModal
+      open={showCompleteConfirm}
+      title="성장기록에 추가하기"
+      desc="이 면접 기록을 완료로 변경하고 총 횟수와 평균 점수에 반영할까요?"
+      onConfirm={onComplete}
+      onCancel={() => { setShowCompleteConfirm(false); setSelectedSessionId(null); }}
+      confirmText="추가하기"
+      cancelText="취소"
+      />
 
       {/* 헤더 — 프로필 (연습 횟수 기준 성장 이미지 + 점수 기준 배지 색상) */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0 8px" }}>
@@ -299,11 +330,27 @@ export default function Mypage() {
                   <ModeBadge mode={h.mode} />
                   {h.jobName} · {h.questionType}
                   {h.isIncomplete && (
+                    <>
                     <span style={{
                       fontSize: 11, fontWeight: 700, color: "#B5503A",
                       background: "rgba(181,80,58,0.1)", padding: "2px 8px",
                       borderRadius: 20, letterSpacing: "0.02em",
                     }}>미완료</span>
+                    <button
+                     onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSessionId(h.id);
+                      setShowCompleteConfirm(true);
+                    }}
+                    style={{
+                      fontSize: 11, fontWeight: 700, color: T.forest,
+                      background: T.mist, padding: "2px 8px",
+                      borderRadius: 20, border: "none", cursor: "pointer", 
+                      fontFamily: "inherit",
+                      }}>
+                        성장기록에 추가하기
+                    </button>
+                    </>
                     )}
                 </div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>
