@@ -50,6 +50,7 @@ export default function Loading() {
           results.push(result);
         }
         setFeedbacks(results);
+
       } catch (e) {
         console.warn("[loading] 채점 실패:", e.message);
         setError(true);
@@ -57,7 +58,7 @@ export default function Loading() {
         return; // 결과 화면으로 안 넘어가게
       }
       
-      navigate("/result", { replace: true });
+      navigate(`/result/${session.sessionId}`, { replace: true });
     })();
   }, []);  // 마운트 시 1회
 

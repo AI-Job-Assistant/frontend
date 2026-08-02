@@ -49,7 +49,7 @@ export default function App() {
             <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />
             <Route path="/interview/speak" element={<Protected><SpeakInterview /></Protected>} />
             <Route path="/loading" element={<Protected><Loading /></Protected>} />
-            <Route path="/result" element={<Protected><Result /></Protected>} />
+            <Route path="/result/:sessionId" element={<Protected><Result /></Protected>} />
             <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

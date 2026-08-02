@@ -68,3 +68,6 @@ export const getAnalysis = () => req("/api/mypage/analysis");
 
 export const completeInterview = (sessionId) =>
   req("/api/interview/complete", { method: "POST", body: { sessionId } });
+
+export const getResultDetail = (sessionId) =>
+  req(`/api/interview/result/${sessionId}`);

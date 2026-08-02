@@ -320,7 +320,7 @@ export default function Mypage() {
         {(historyExpanded ? history : history.slice(0, 5)).map((h) => {
           const score = h.avgScore == null ? null : Number(h.avgScore);
           return (
-            <button key={h.id} onClick={() => navigate("/result")} style={{
+            <button key={h.id} onClick={() => navigate(`/result/${h.id}`)} style={{
               width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
               padding: "14px 6px", border: "none", borderTop: `1px solid ${T.line}`,
               background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
