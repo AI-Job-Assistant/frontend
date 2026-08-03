@@ -15,6 +15,7 @@ const Loading = lazy(() => import("./screens/Loading"));
 const Result = lazy(() => import("./screens/Result"));
 const Mypage = lazy(() => import("./screens/Mypage"));
 const ForgotPassword = lazy(() => import("./screens/ForgotPassword"));
+const TransitionLoading = lazy(() => import("./screens/TransitionLoading"));
 
 /* 로딩 중 보여줄 화면 */
 function PageLoader() {
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/result/:sessionId" element={<Protected><Result /></Protected>} />
             <Route path="/mypage" element={<Protected><Mypage /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/transition" element={<Protected><TransitionLoading /></Protected>} />
           </Routes>
         </Suspense>
       </AnimatePresence>

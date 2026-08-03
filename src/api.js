@@ -71,3 +71,6 @@ export const completeInterview = (sessionId) =>
 
 export const getResultDetail = (sessionId) =>
   req(`/api/interview/result/${sessionId}`);
+
+export const updateGoal = (goal) =>
+  req("/api/mypage/goal", { method: "PUT", body: { goal } });

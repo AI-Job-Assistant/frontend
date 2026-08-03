@@ -23,7 +23,7 @@ export default function Login() {
       const user = await signIn({ studentId: id, password: pw });
       // AppContext에 studentId 반영
       setStudentId(user.studentId);
-      navigate("/");          // 로그인 성공 → 메인
+      navigate("/transition", { state: { message: "꿈을 향한 한 걸음!", to: "/" } });          // 로그인 성공 → 메인
     } catch (e) {
       // Firebase는 e.code, MySQL은 e.message로 에러가 옴
       setErr(authErrorMessage(e.message));

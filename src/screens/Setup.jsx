@@ -41,7 +41,8 @@ export default function Setup() {
         interviewStyle: itype === "압박 면접" ? "압박" : undefined,
       });
       setSession(data);
-      navigate(mode === "speaking" ? "/interview/speak" : "/interview/text");
+      const dest = mode === "speaking" ? "/interview/speak" : "/interview/text";
+      navigate("/transition", { state: { message: `${job}를 향한 한 걸음`, to: dest } });
     } catch (e) {
       console.error("[Setup] 질문 생성 오류:", e);
       setErr("질문 생성에 실패했어요. 서버 상태를 확인하고 다시 시도해주세요.");

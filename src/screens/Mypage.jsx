@@ -5,7 +5,7 @@ import { GrowthBadge, Icon } from "../components/Characters";
 import { Card, Eyebrow } from "../components/UI";
 import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
-import { getStats, getHistory, getHeatmap, getAnalysis, completeInterview } from "../api";
+import { getStats, getHistory, getHeatmap, getAnalysis, completeInterview, updateGoal } from "../api";
 
 /* 잔디(달력) 색 단계 — "면접 횟수" 기준 */
 function band(count) {
@@ -93,52 +93,88 @@ export default function Mypage() {
   const [history, setHistory] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [isRefreshingAnalysis, setIsRefreshingAnalysis] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [goal, setGoal] = useState(null);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const [goalSaving, setGoalSaving] = useState(false);
 
   useEffect(() => {
-    async function loadData() {
+    // ① 빠른 데이터: stats + history — DB 조회라 거의 즉시 옴
+    async function loadFast() {
       try {
-        const [statsData, historyData, analysisData] = await Promise.all([
+        const [statsData, historyData] = await Promise.all([
           getStats().catch(() => null),
           getHistory().catch(() => []),
-          getAnalysis().catch(() => null),
         ]);
-
         setStats(statsData);
         setHistory(historyData);
-        setAnalysis(analysisData);
       } catch (e) {
-        console.error("[Mypage] 데이터 로딩 실패:", e);
+        console.error("[Mypage] 빠른 데이터 로딩 실패:", e);
       } finally {
-        setAnalysisLoading(false);
         setLoading(false);
       }
     }
-    loadData();
+
+    // ② 느린 데이터: AI 분석 — 얘만 따로 돌아서 페이지 전체를 막지 않음
+    async function loadAnalysis() {
+      try {
+        const analysisData = await getAnalysis();
+        setAnalysis(analysisData);
+      } catch (e) {
+        console.error("[Mypage] AI 분석 로딩 실패:", e);
+        setAnalysis(null);
+      } finally {
+        setAnalysisLoading(false);
+      }
+    }
+
+    loadFast();
+    loadAnalysis();
   }, []);
 
-  const onComplete = async () => {
+const onComplete = async () => {
   if (!selectedSessionId) return;
   try {
     await completeInterview(selectedSessionId);
-    // 데이터 새로고침
-    const [statsData, historyData, heatmapData, analysisData] = await Promise.all([
-      getStats(), getHistory(), getHeatmap(), getAnalysis(),
-    ]);
+    // stats/history는 바로 반영
+    const [statsData, historyData] = await Promise.all([getStats(), getHistory()]);
     setStats(statsData);
     setHistory(historyData);
-    setHeatmap(heatmapData);
-    setAnalysis(analysisData);
+    // AI 분석은 느릴 수 있으니 카드만 다시 로딩 상태로
+    setAnalysisLoading(true);
+    setIsRefreshingAnalysis(true);
+    getAnalysis()
+      .then(setAnalysis)
+      .catch(() => setAnalysis(null))
+      .finally(() => {
+        setAnalysisLoading(false);
+        setIsRefreshingAnalysis(false);
+      });
   } catch (e) {
     console.error("완료 처리 실패:", e);
   } finally {
     setShowCompleteConfirm(false);
     setSelectedSessionId(null);
-  }
-};
+  }};
+  const handleGoalSave = async () => {
+  const trimmed = goalInput.trim();
+  if (!trimmed) return;
+  setGoalSaving(true);
+  try {
+    const res = await updateGoal(trimmed);
+    setGoal(res.goal);
+    setIsEditingGoal(false);
+  } catch (e) {
+    console.error("목표 저장 실패:", e);
+  } finally {
+    setGoalSaving(false);
+  }};
+
 
   if (loading) {
     return (
@@ -233,6 +269,64 @@ export default function Mypage() {
       <div style={{ fontSize: 12.5, color: T.inkSoft, margin: "0 0 20px 2px" }}>
         연습 횟수가 늘어날수록 새싹이 나무로 성장합니다! 큰 나무가 될 때까지 함께해요.
       </div>
+
+      {/* 목표 설정 */}
+      <Card style={{ padding: "16px 20px", marginBottom: 20 }}>
+        {isEditingGoal ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+            autoFocus
+            value={goalInput}
+            onChange={(e) => setGoalInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleGoalSave()}
+            placeholder="예: 백엔드 개발자 취업"
+            maxLength={100}
+            style={{
+              flex: 1, fontSize: 14.5, fontWeight: 600, color: T.ink,
+              border: `1px solid ${T.line}`, borderRadius: 8,
+              padding: "8px 12px", fontFamily: "inherit", outline: "none",
+            }}
+          />
+          <button
+          onClick={handleGoalSave}
+          disabled={goalSaving}
+          style={{
+            fontSize: 13, fontWeight: 700, color: "#fff", background: T.forest,
+            border: "none", borderRadius: 8, padding: "8px 14px",
+            cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+          }}
+        >
+          {goalSaving ? "저장 중..." : "저장"}
+        </button>
+        <button
+        onClick={() => { setIsEditingGoal(false); setGoalInput(goal || ""); }}
+        style={{
+          fontSize: 13, fontWeight: 600, color: T.inkSoft, background: "transparent",
+          border: "none", cursor: "pointer", fontFamily: "inherit", padding: "8px 6px",
+        }}
+      >
+        취소
+      </button>
+    </div>
+  ) : (
+    <div
+      onClick={() => { setGoalInput(goal || ""); setIsEditingGoal(true); }}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+    >
+      <div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: T.forest, marginBottom: 3, letterSpacing: "0.02em" }}>
+          🎯 목표
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: goal ? T.ink : T.inkFaint }}>
+          {goal || "목표를 설정해보세요"}
+        </div>
+      </div>
+      <span style={{ fontSize: 11.5, color: T.inkSoft, whiteSpace: "nowrap" }}>
+        언제든 수정 가능
+      </span>
+    </div>
+  )}
+</Card>
 
       {/* 통계 3칸 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }} className="stat-grid">
@@ -385,36 +479,60 @@ export default function Mypage() {
       </Card>
 
       {/* AI 강점·약점 분석 */}
+
+      {/* AI 강점·약점 분석 */}
       <Card style={{ padding: 24, marginTop: 16 }}>
         <div style={{ marginBottom: 14 }}>
           <Eyebrow>AI Analysis</Eyebrow>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: T.ink, margin: "3px 0 0", letterSpacing: "-0.01em" }}>강점 · 약점 분석</h3>
         </div>
+        
         {analysisLoading ? (
-          <p style={{ color: T.inkSoft, fontSize: 13.5 }}>분석 중...</p>
-        ) : !analysis?.hasData ? (
-          <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
-        ) : (
-          <>
-            <p style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>{analysis.basedOn}회 면접 기반 분석</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8 }}>💪 대표 강점</div>
-                {analysis.topStrengths?.map((s, i) => (
-                  <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {s}</div>
-                ))}
+          <div className="analysis-skeleton">
+            {isRefreshingAnalysis && (
+              <p style={{ fontSize: 12.5, color: T.forest, fontWeight: 600, marginBottom: 12 }}>
+                🔄 최신 면접 기록을 반영해서 분석하고 있어요...
+              </p>
+            )}
+            <div style={{ width: 140, height: 11, borderRadius: 4, background: T.line, marginBottom: 14 }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }} className="stat-grid">
+              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.surfaceAlt, minHeight: 92 }}>
+                <div style={{ width: 60, height: 10, borderRadius: 4, background: T.line, marginBottom: 10 }} />
+                <div style={{ width: "90%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
+                <div style={{ width: "65%", height: 9, borderRadius: 4, background: T.line }} />
               </div>
-              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.amberSoft }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 8 }}>🎯 보완할 점</div>
-                {analysis.topWeaknesses?.map((w, i) => (
-                  <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {w}</div>
-                ))}
+              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.surfaceAlt, minHeight: 92 }}>
+                <div style={{ width: 60, height: 10, borderRadius: 4, background: T.line, marginBottom: 10 }} />
+                <div style={{ width: "90%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
+                <div style={{ width: "65%", height: 9, borderRadius: 4, background: T.line }} />
               </div>
             </div>
-            <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
-          </>
-        )}
-      </Card>
+            <div style={{ width: "95%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
+            <div style={{ width: "70%", height: 9, borderRadius: 4, background: T.line }} />
+          </div>
+        ) : !analysis?.hasData ? (
+        <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
+      ) : (
+      <>
+      <p style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>{analysis.basedOn}회 면접 기반 분석</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8 }}>💪 대표 강점</div>
+          {analysis.topStrengths?.map((s, i) => (
+            <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {s}</div>
+          ))}
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: 10, background: T.amberSoft }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 8 }}>🎯 보완할 점</div>
+          {analysis.topWeaknesses?.map((w, i) => (
+            <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {w}</div>
+          ))}
+        </div>
+      </div>
+      <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
+    </>
+  )}
+  </Card>
       <style>{`
         @media (max-width:560px){
           .stat-grid{ grid-template-columns:1fr 1fr !important; }
