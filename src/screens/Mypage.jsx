@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { T, GROWTH, sessionsToNextStage } from "../styles/tokens";
-import { GrowthBadge, Icon } from "../components/Characters";
+import { GrowthBadge, Icon, Sprout } from "../components/Characters";
 import { Card, Eyebrow } from "../components/UI";
 import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
@@ -39,18 +39,15 @@ function calcStreak(dayCounts, today) {
   return streak;
 }
 
-/* history(날짜) → 날짜별 면접 횟수 맵 { "2026-07-22": 2, ... } */
-function buildDayCounts(history) {
+/* heatmap API 응답(날짜별 집계) → 날짜별 면접 횟수 맵 { "2026-07-22": 30, ... } */
+function buildDayCounts(heatmapData) {
   const counts = {};
-  (history || []).forEach((h) => {
-    if (!h.createdAt) return;
-    const d = new Date(h.createdAt);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    counts[key] = (counts[key] || 0) + 1;
+  (heatmapData || []).forEach((item) => {
+    if (!item.date) return;
+    counts[item.date] = item.sessionCount ?? 0;
   });
   return counts;
 }
-
 /* 특정 연/월의 달력 칸 배열 생성 (앞쪽 빈칸 포함, 1일~말일) */
 function buildMonthGrid(year, month, dayCounts) {
   const firstWeekday = new Date(year, month, 1).getDay(); // 0=일요일
@@ -102,23 +99,28 @@ export default function Mypage() {
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
   const [goalSaving, setGoalSaving] = useState(false);
+  const [heatmapData, setHeatmapData] = useState(null);
+
 
   useEffect(() => {
     // ① 빠른 데이터: stats + history — DB 조회라 거의 즉시 옴
     async function loadFast() {
-      try {
-        const [statsData, historyData] = await Promise.all([
-          getStats().catch(() => null),
-          getHistory().catch(() => []),
-        ]);
-        setStats(statsData);
-        setHistory(historyData);
-      } catch (e) {
-        console.error("[Mypage] 빠른 데이터 로딩 실패:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
+  try {
+    const [statsData, historyData, heatmapRes] = await Promise.all([
+      getStats().catch(() => null),
+      getHistory().catch(() => []),
+      getHeatmap().catch(() => null),   // ← 추가
+    ]);
+    setStats(statsData);
+    setHistory(historyData);
+    setGoal(statsData?.goal ?? null);
+    setHeatmapData(heatmapRes);         // ← 추가
+  } catch (e) {
+    console.error("[Mypage] 빠른 데이터 로딩 실패:", e);
+  } finally {
+    setLoading(false);
+  }
+}
 
     // ② 느린 데이터: AI 분석 — 얘만 따로 돌아서 페이지 전체를 막지 않음
     async function loadAnalysis() {
@@ -226,7 +228,7 @@ const onComplete = async () => {
   const colorOf = (c) => (c == null ? T.surfaceAlt : GROWTH[band(c)]);
   const legend = [["4회+", 4], ["3회", 3], ["2회", 2], ["1회", 0]];
 
-  const dayCounts = buildDayCounts(history);
+  const dayCounts = buildDayCounts(heatmapData ?? []);
   const now = new Date();
   const today = new Date(); today.setHours(0, 0, 0, 0);
   // 지난 2개월 + 이번 달 (오래된 순 → 최신 순)
@@ -478,42 +480,29 @@ const onComplete = async () => {
         )}
       </Card>
 
-      {/* AI 강점·약점 분석 */}
 
       {/* AI 강점·약점 분석 */}
-      <Card style={{ padding: 24, marginTop: 16 }}>
-        <div style={{ marginBottom: 14 }}>
-          <Eyebrow>AI Analysis</Eyebrow>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: T.ink, margin: "3px 0 0", letterSpacing: "-0.01em" }}>강점 · 약점 분석</h3>
-        </div>
-        
-        {analysisLoading ? (
-          <div className="analysis-skeleton">
-            {isRefreshingAnalysis && (
-              <p style={{ fontSize: 12.5, color: T.forest, fontWeight: 600, marginBottom: 12 }}>
-                🔄 최신 면접 기록을 반영해서 분석하고 있어요...
-              </p>
-            )}
-            <div style={{ width: 140, height: 11, borderRadius: 4, background: T.line, marginBottom: 14 }} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }} className="stat-grid">
-              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.surfaceAlt, minHeight: 92 }}>
-                <div style={{ width: 60, height: 10, borderRadius: 4, background: T.line, marginBottom: 10 }} />
-                <div style={{ width: "90%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
-                <div style={{ width: "65%", height: 9, borderRadius: 4, background: T.line }} />
-              </div>
-              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.surfaceAlt, minHeight: 92 }}>
-                <div style={{ width: 60, height: 10, borderRadius: 4, background: T.line, marginBottom: 10 }} />
-                <div style={{ width: "90%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
-                <div style={{ width: "65%", height: 9, borderRadius: 4, background: T.line }} />
-              </div>
-            </div>
-            <div style={{ width: "95%", height: 9, borderRadius: 4, background: T.line, marginBottom: 6 }} />
-            <div style={{ width: "70%", height: 9, borderRadius: 4, background: T.line }} />
-          </div>
-        ) : !analysis?.hasData ? (
-        <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
-      ) : (
-      <>
+<Card style={{ padding: 24, marginTop: 16 }}>
+  <div style={{ marginBottom: 14 }}>
+    <Eyebrow>AI Analysis</Eyebrow>
+    <h3 style={{ fontSize: 16, fontWeight: 700, color: T.ink, margin: "3px 0 0", letterSpacing: "-0.01em" }}>강점 · 약점 분석</h3>
+  </div>
+
+  {analysisLoading ? (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 0 8px" }}>
+      <div className="sprout-grow">
+        <Sprout size={56} />
+      </div>
+      <p style={{ fontSize: 13.5, fontWeight: 600, color: T.forest, marginTop: 16 }}>
+        {isRefreshingAnalysis
+          ? "🔄 최신 면접 기록을 반영해서 분석하고 있어요..."
+          : "🔄 분석 중..."}
+      </p>
+    </div>
+  ) : !analysis?.hasData ? (
+    <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
+  ) : (
+    <>
       <p style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>{analysis.basedOn}회 면접 기반 분석</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
         <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
@@ -532,11 +521,16 @@ const onComplete = async () => {
       <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
     </>
   )}
-  </Card>
+</Card>
       <style>{`
         @media (max-width:560px){
           .stat-grid{ grid-template-columns:1fr 1fr !important; }
           .calendar-grid{ grid-template-columns:1fr !important; }
+        }
+        .sprout-grow { animation: grow 1.6s ease-in-out infinite; transform-origin: bottom; }
+        @keyframes grow { 0%,100%{ transform: scale(.96) } 50%{ transform: scale(1.04) } }
+        @media (prefers-reduced-motion: reduce){
+        .sprout-grow{ animation: none }
         }
       `}</style>
     </Shell>
