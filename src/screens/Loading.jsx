@@ -28,14 +28,17 @@ export default function Loading() {
       const questionType = QTYPE_MAP[config?.qtype] || config?.qtype;
 
       // 스피킹만 카메라 지표 첨부 (gazeRate 0~100 → 0~1 변환)
-      const extra =
-        mode === "speaking" && session?.sessionId != null
+      const extra = session?.sessionId != null
+      ? {
+        sessionId: session.sessionId,
+        ...(mode === "speaking"
           ? {
-              sessionId: session.sessionId,
-              smileCount: faceStats?.smiles ?? 0,
-              eyeContactRatio: (faceStats?.gazeRate ?? 0) / 100,
-            }
-          : undefined;
+            smileCount: faceStats?.smiles ?? 0,
+            eyeContactRatio: (faceStats?.gazeRate ?? 0) / 100,
+          }
+        : {}),
+      }
+      : undefined;
 
       try {
         const results = [];

@@ -15,6 +15,7 @@ export default function ChallengeModal({ onClose }) {
   const [feedback, setFeedback] = useState(null);
   const [err, setErr] = useState("");
   const [loadingText, setLoadingText] = useState("질문을 준비하고 있어요");
+  const [sessionId, setSessionId] = useState(null);
 
   const jobsInField = JOB_GROUPS.find((g) => g.field === field)?.jobs || [];
   const ready = job && qtype;
@@ -30,6 +31,7 @@ export default function ChallengeModal({ onClose }) {
       // 질문 5개 중 랜덤 1개 선택
       const idx = Math.floor(Math.random() * data.questions.length);
       setQuestion(data.questions[idx]);
+      setSessionId(data.sessionId);
       setAnswer("");
       setFeedback(null);
       setStep("question");
@@ -47,13 +49,14 @@ export default function ChallengeModal({ onClose }) {
     setErr("");
     try {
       const result = await evaluateAnswer({
-        questionId: null,
+        questionId: question.id,
         question: question.content,
         answer,
         questionType: QTYPE_MAP[qtype] || qtype,
-        extra: { sessionType: "challenge" },
+        extra: { sessionType: "challenge", sessionId } ,
       });
-      setFeedback(result);
+      const displayScore = Math.min(Math.round(result.score * 5), 100);
+      setFeedback({ ...result, score: displayScore });
       setStep("result");
     } catch (e) {
       setErr("피드백 생성에 실패했어요. 다시 시도해주세요.");
