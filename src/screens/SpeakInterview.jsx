@@ -46,6 +46,14 @@ export default function SpeakInterview() {
     const [noCam, setNoCam] = useState(false);
     const [showNoCamModal, setShowNoCamModal] = useState(false);
     
+    const [toast, setToast] = useState("");
+
+    useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(""), 2800);
+        return () => clearTimeout(t);
+    }, [toast]);
+
     const last = idx === total - 1;
 
     const videoRef = useRef(null);
@@ -148,6 +156,15 @@ export default function SpeakInterview() {
             ctx.strokeRect(x, y, w, h);
         }
     }, [detection]);
+
+    /* STT 텍스트 정제 — 앞뒤 공백/의미 없는 특수문자 제거 */
+    function sanitizeAnswer(text) {
+        if (!text) return "";
+        let t = text.trim();
+        // 앞뒤에 붙는 마침표·쉼표·말줄임표 등 의미 없는 특수문자 제거
+        t = t.replace(/^[.,·…\s]+/, "").replace(/[.,·…\s]+$/, "");
+        return t.trim();
+    }
 
     const buildRecognizer = () => {
         if (!SR) return null;
@@ -253,6 +270,16 @@ export default function SpeakInterview() {
     };
 
     const next = () => {
+        const cleaned = sanitizeAnswer(texts[idx]);
+
+        // 최소 글자 수 검사
+        if(cleaned.length < 10) {
+            setToast("답변이 너무 짧습니다. 조금 더 자세히 말씀해 주세요!");
+            return; //진행을 막고 재녹음 유도
+        }
+
+        setTexts((prev) => { const a = [...prev]; a[idx] = cleaned; return a; });
+
         if (recogRef.current) { recogRef.current._active = false; try { recogRef.current.stop(); } catch { } }
         if (last) {
             stopCamera();
@@ -265,7 +292,7 @@ export default function SpeakInterview() {
                 qList.map((q, i) => ({
                     questionId: q.id,
                     question: q.content,
-                    answer: texts[i] || "",
+                    answer: i === idx ? cleaned : sanitizeAnswer(texts[i]),
                 }))
             );
             navigate("/loading");
@@ -276,6 +303,18 @@ export default function SpeakInterview() {
 
     return (
         <Shell>
+            {toast && (
+                <div style={{
+                    position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)",
+                    background: "rgba(28,33,24,0.92)", color: "#fff",
+                    padding: "12px 20px", borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+                    zIndex: 1000, boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                    animation: "toastIn .25s ease-out",
+                }}>
+                    {toast}
+                </div>
+            )}
+
             <TopBar onQuit={() => setShowQuit(true)} />
             <ConfirmModal
                 open={showCamGuide}
@@ -531,6 +570,14 @@ export default function SpeakInterview() {
                     </div>
                 )}
             </Card>
+
+            <style>{`
+            @keyframes toastIn {
+            from { opacity: 0; transform: translate(-50%, 8px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+            }
+            `}</style>
+            
         </Shell>
     );
 }

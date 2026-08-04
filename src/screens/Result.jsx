@@ -20,20 +20,28 @@ function normalize(results) {
     return { score: 0, perQ: [] };
   }
 
-  const perQ = results.map((r) => ({
-    question: r.question || "",
-    answer: r.answer || "",
-    score: r.score ?? 0,
-    strengths: Array.isArray(r.strengths) ? r.strengths : [r.strengths].filter(Boolean),
-    improvements: Array.isArray(r.improvements) ? r.improvements : [r.improvements].filter(Boolean),
-    suggestion: r.suggestion || "",
-    modelAnswer: r.modelAnswer || "",
-  }));
+  const perQ = results.map((r) => {
+    const noAnswer = !r.answer;
 
-  // 문항당 20점 만점 × N문항 → 합계가 총점 (평균 아님!)
+    const strengths = Array.isArray(r.strengths) ? r.strengths : [r.strengths].filter(Boolean);
+    const improvements = Array.isArray(r.improvements) ? r.improvements : [r.improvements].filter(Boolean);
+
+    return {
+      question: r.question || "",
+      answer: r.answer || "",
+      score: r.score ?? 0,
+      hasAnswer: !noAnswer,   // ← 추가
+      strengths: strengths.length > 0 ? strengths : (noAnswer ? ["답변을 제출하지 않은 질문입니다."] : []),
+      improvements: improvements.length > 0 ? improvements : (noAnswer ? ["답변을 제출하지 않은 질문입니다."] : []),
+      suggestion: r.suggestion || (noAnswer ? "답변을 제출하지 않은 질문입니다." : ""),
+      modelAnswer: r.modelAnswer || "",   // ← 의미 없던 삼항연산자 제거
+    };
+  });
+
   const total = perQ.reduce((s, p) => s + p.score, 0);
   return { score: total, perQ };
 }
+
 
 export default function Result() {
   const navigate = useNavigate();
@@ -204,7 +212,7 @@ export default function Result() {
                 <FbBlock label="잘한 점" accent={T.forest} items={p.strengths} />
                 <FbBlock label="개선할 점" accent={T.amber} items={p.improvements} />
                 <FbBlock label="추천 답변 방향" accent={T.sage} items={[p.suggestion]} />
-                {p.modelAnswer && (
+                {p.modelAnswer ? (
                   <div style={{
                     marginTop: 12, padding: "14px 16px",
                     background: "rgba(59,130,246,0.05)",
@@ -212,7 +220,7 @@ export default function Result() {
                     borderRadius: 10,
                   }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 8 }}>
-                      STAR 기반 모범 답안 예시
+                      STAR 기반 모범 답안 예시 [상황/과제/행동/결과]
                     </div>
                     <p style={{
                       fontSize: 13.5, color: T.inkMid, lineHeight: 1.7,
@@ -221,6 +229,13 @@ export default function Result() {
                       {p.modelAnswer}
                     </p>
                   </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: T.inkFaint, marginTop: 12 }}>
+                    {p.hasAnswer
+                      ? "일시적인 서버 오류로 모범 답안을 생성하지 못했습니다. 잠시 후 다시 시도해주세요."
+                      : "제출된 답변이 없어 모범 답안을 제공하지 않습니다."
+}
+                  </p>
                 )}
               </div>
             )}

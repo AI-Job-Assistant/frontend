@@ -1,6 +1,6 @@
 // src/api.js
 import { QTYPE_MAP, JOB_MAP } from "./styles/tokens";
-import { getToken } from "./auth";
+import { getToken, logOut } from "./auth";
 
 const BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
@@ -20,6 +20,13 @@ async function req(path, { method = "GET", body } = {}) {
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  if(res.status === 401) {
+    await logOut(); // 토큰 만료 시 자동 로그아웃
+    window.location.href = "/login"; // 로그인 페이지로 이동
+    throw new Error("인증 실패: 토큰 만료 또는 잘못된 토큰");
+  }
+  
   // 서버가 안 떠 있으면 index.html(HTML)이 와서 JSON 파싱이 깨짐 → 명확한 에러로
   const text = await res.text();
   let data;
