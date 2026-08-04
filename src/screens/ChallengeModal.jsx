@@ -55,8 +55,7 @@ export default function ChallengeModal({ onClose }) {
         questionType: QTYPE_MAP[qtype] || qtype,
         extra: { sessionType: "challenge", sessionId } ,
       });
-      const displayScore = Math.min(Math.round(result.score * 5), 100);
-      setFeedback({ ...result, score: displayScore });
+      setFeedback(result);
       setStep("result");
     } catch (e) {
       setErr("피드백 생성에 실패했어요. 다시 시도해주세요.");
