@@ -183,7 +183,7 @@ export default function Result() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: GROWTH[stageFor(p.score)] }} />
                 <span style={{ fontSize: 14, fontWeight: 700, color: T.forest, fontVariantNumeric: "tabular-nums" }}>
-                  {p.score}점<span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 400 }}>{session?.mode === "도전" ? 100 : 20}</span>
+                  {p.score}점<span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 400 }}>/{session?.mode === "도전" ? 100 : 20}</span>
                 </span>
                 <span style={{ color: T.inkFaint, fontSize: 12 }}>{open === i ? "▲" : "▼"}</span>
               </div>
