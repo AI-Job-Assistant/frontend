@@ -1,11 +1,11 @@
-import React, { useState ,useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { T, GROWTH } from "../styles/tokens";
 import { SproutBadge, Icon } from "../components/Characters";
 import { Card, Btn, Eyebrow } from "../components/UI";
 import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
-import { completeInterview,getResultDetail } from "../api";
+import { completeInterview, getResultDetail, evaluateAnswer } from "../api";
 
 function stageFor(score) {
   if (score >= 90) return 4;
@@ -26,15 +26,21 @@ function normalize(results) {
     const strengths = Array.isArray(r.strengths) ? r.strengths : [r.strengths].filter(Boolean);
     const improvements = Array.isArray(r.improvements) ? r.improvements : [r.improvements].filter(Boolean);
 
+    // AI 분석 실패 여부 감지 (강점/개선점/추천답변 문구에 "분석...실패"가 포함되면 실패로 간주)
+    const failText = [...strengths, ...improvements, r.suggestion].filter(Boolean).join(" ");
+    const analysisFailed = /분석.*실패/.test(failText);
+
     return {
+      questionId: r.questionId, // ← 재분석 요청 시 필요
       question: r.question || "",
       answer: r.answer || "",
       score: r.score ?? 0,
-      hasAnswer: !noAnswer,   // ← 추가
+      hasAnswer: !noAnswer,
+      analysisFailed, // ← 추가
       strengths: strengths.length > 0 ? strengths : (noAnswer ? ["답변을 제출하지 않은 질문입니다."] : []),
       improvements: improvements.length > 0 ? improvements : (noAnswer ? ["답변을 제출하지 않은 질문입니다."] : []),
       suggestion: r.suggestion || (noAnswer ? "답변을 제출하지 않은 질문입니다." : ""),
-      modelAnswer: r.modelAnswer || "",   // ← 의미 없던 삼항연산자 제거
+      modelAnswer: r.modelAnswer || "",
     };
   });
 
@@ -46,7 +52,7 @@ function normalize(results) {
 export default function Result() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  const { faceStats, totalSec } = useApp(); // 방금 끝낸 면접이면 남아있고, 새로고침/이력조회면 비어있음
+  const { faceStats, totalSec, resultSessionId } = useApp();
 
   const [session, setSession] = useState(null);
   const [results, setResults] = useState([]);
@@ -54,6 +60,7 @@ export default function Result() {
   const [error, setError] = useState(false);
   const [open, setOpen] = useState(0);
   const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+  const [refreshingIdx, setRefreshingIdx] = useState(null); // ← 추가: 재분석 중인 문항 index
 
   const penalty = Number(sessionStorage.getItem("penalty") || 0);
   const extraCount = JSON.parse(sessionStorage.getItem("extraCount") || "[]");
@@ -81,6 +88,30 @@ export default function Result() {
   }, [sessionId]);
 
   const data = normalize(results);
+
+  // ← 추가: 분석 실패한 문항 재요청
+  const retryAnalysis = async (i) => {
+    const p = data.perQ[i];
+    setRefreshingIdx(i);
+    try {
+      const updated = await evaluateAnswer({
+        questionId: p.questionId,
+        question: p.question,
+        answer: p.answer,
+        questionType: session?.questionType,
+        extra: sessionId ? { sessionId } : undefined,
+      });
+      setResults((prev) => {
+        const next = [...prev];
+        next[i] = { ...next[i], ...updated };
+        return next;
+      });
+    } catch (e) {
+      console.warn("[Result] 재분석 실패:", e.message);
+    } finally {
+      setRefreshingIdx(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -209,33 +240,56 @@ export default function Result() {
                   </div>
                 )}
 
-                <FbBlock label="잘한 점" accent={T.forest} items={p.strengths} />
-                <FbBlock label="개선할 점" accent={T.amber} items={p.improvements} />
-                <FbBlock label="추천 답변 방향" accent={T.sage} items={[p.suggestion]} />
-                {p.modelAnswer ? (
+                {/* ← 여기서부터 분석 실패 여부로 분기 */}
+                {p.analysisFailed ? (
                   <div style={{
-                    marginTop: 12, padding: "14px 16px",
-                    background: "rgba(59,130,246,0.05)",
-                    border: "1px solid rgba(59,130,246,0.2)",
-                    borderRadius: 10,
+                    marginTop: 12, padding: 16, borderRadius: 10,
+                    background: "rgba(181,80,58,0.06)",
+                    border: "1px solid rgba(181,80,58,0.2)",
+                    textAlign: "center",
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 8 }}>
-                      STAR 기반 모범 답안 예시 [상황/과제/행동/결과]
-                    </div>
-                    <p style={{
-                      fontSize: 13.5, color: T.inkMid, lineHeight: 1.7,
-                      whiteSpace: "pre-line", margin: 0,
-                    }}>
-                      {p.modelAnswer}
+                    <p style={{ fontSize: 13.5, color: "#B5503A", fontWeight: 600, margin: "0 0 10px" }}>
+                      AI 분석에 실패했어요
                     </p>
+                    <Btn
+                      variant="outline"
+                      onClick={() => retryAnalysis(i)}
+                      disabled={refreshingIdx === i}
+                    >
+                      {refreshingIdx === i ? "다시 분석하는 중…" : "🔄 다시 분석하기"}
+                    </Btn>
                   </div>
                 ) : (
-                  <p style={{ fontSize: 13, color: T.inkFaint, marginTop: 12 }}>
-                    {p.hasAnswer
-                      ? "일시적인 서버 오류로 모범 답안을 생성하지 못했습니다. 잠시 후 다시 시도해주세요."
-                      : "제출된 답변이 없어 모범 답안을 제공하지 않습니다."
-}
-                  </p>
+                  <>
+                    <FbBlock label="잘한 점" accent={T.forest} items={p.strengths} />
+                    <FbBlock label="개선할 점" accent={T.amber} items={p.improvements} />
+                    <FbBlock label="추천 답변 방향" accent={T.sage} items={[p.suggestion]} />
+                    {p.modelAnswer ? (
+                      <div style={{
+                        marginTop: 12, padding: "14px 16px",
+                        background: "rgba(59,130,246,0.05)",
+                        border: "1px solid rgba(59,130,246,0.2)",
+                        borderRadius: 10,
+                      }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 8 }}>
+                          STAR 기반 모범 답안 예시 [상황/과제/행동/결과]
+                        </div>
+                        <p style={{
+                          fontSize: 13.5, color: T.inkMid, lineHeight: 1.7,
+                          whiteSpace: "pre-line", margin: 0,
+                        }}>
+                          {p.modelAnswer}
+                        </p>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 13, color: T.inkFaint, marginTop: 12 }}>
+                        {p.hasAnswer
+                          ? "일시적인 서버 오류로 모범 답안을 생성하지 못했습니다. 잠시 후 다시 시도해주세요."
+                          : "제출된 답변이 없어 모범 답안을 제공하지 않습니다."
+                        }
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}

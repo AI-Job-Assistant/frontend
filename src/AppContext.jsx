@@ -28,6 +28,7 @@ export function AppProvider({ children }) {
 
   const [faceStats, setFaceStats] = useState(null);  // { smiles, gazeRate }
   const [totalSec, setTotalSec] = useState(0);
+  const [resultSessionId, setResultSessionId] = useState(null); // ← 추가: faceStats/totalSec가 어느 세션 것인지 표시
 
   // 면접 1회분 — 질문 생성 응답 보관 (sessionId·questions[])
   const [session, setSession] = useState(null);
@@ -104,6 +105,7 @@ export function AppProvider({ children }) {
     config, setConfig,
     faceStats, setFaceStats,
     totalSec, setTotalSec,
+    resultSessionId, setResultSessionId, // ← 추가
     session, setSession,
     answers, setAnswers,
     feedbacks, setFeedbacks,
@@ -118,6 +120,8 @@ export function AppProvider({ children }) {
       setAnswers([]);
       setFeedbacks([]);
       setFaceStats(null);
+      setTotalSec(0);
+      setResultSessionId(null); // ← 추가
     },
   };
 

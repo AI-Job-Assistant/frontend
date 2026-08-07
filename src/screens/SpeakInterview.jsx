@@ -16,6 +16,7 @@ export default function SpeakInterview() {
     const navigate = useNavigate();
     const {
         config, session, setFaceStats, setAnswers: setSessionAnswers, setTotalSec,
+        setResultSessionId,
         cameraPrewarmed, consumePrewarmedCamera, releasePrewarmedCamera,
     } = useApp();
 
@@ -55,6 +56,7 @@ export default function SpeakInterview() {
     }, [toast]);
 
     const last = idx === total - 1;
+    const requireRecord = !(isPressure && idx > 0); // 압박 면접의 2~5번 문제(idx 1~4)만 녹음 없이도 다음 가능
 
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -285,6 +287,7 @@ export default function SpeakInterview() {
             stopCamera();
             setFaceStats(faceStats);
             setTotalSec(sec);
+            setResultSessionId(session?.sessionId ?? null);
             sessionStorage.setItem("extraCount", JSON.stringify(extraCount));
             sessionStorage.setItem("penalty", totalPenalty);
             setTimerRunning(false);
@@ -564,7 +567,7 @@ export default function SpeakInterview() {
                 {started && (
                     <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 24 }}>
                         <Btn variant="outline" onClick={retake}>다시 녹음</Btn>
-                        <Btn variant={last ? "accent" : "primary"} disabled={!recorded[idx]} onClick={next}>
+                        <Btn variant={last ? "accent" : "primary"} disabled={requireRecord && !recorded[idx]} onClick={next}>
                             {last ? <>제출하기 <Icon.check size={18} /></> : <>다음 <Icon.arrow size={18} /></>}
                         </Btn>
                     </div>

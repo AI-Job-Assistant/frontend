@@ -8,7 +8,7 @@ import { useApp } from "../AppContext";
 
 export default function TextInterview() {
   const navigate = useNavigate();
-  const { config, session, setAnswers: setSessionAnswers, setTotalSec } = useApp();
+  const { config, session, setAnswers: setSessionAnswers, setTotalSec, setFaceStats, setResultSessionId } = useApp();
 
   const qList = session?.questions || QUESTIONS.map((content, i) => ({ id: null, content }));
   const questions = qList.map((q) => q.content);
@@ -61,6 +61,8 @@ export default function TextInterview() {
     }));
     setSessionAnswers(payload);
     setTotalSec(sec);
+    setFaceStats(null);
+    setResultSessionId(session?.sessionId ?? null);
     sessionStorage.setItem("extraCount", JSON.stringify(extraCount));
     sessionStorage.setItem("penalty", totalPenalty);
     localStorage.removeItem("draft_answers");
@@ -71,6 +73,11 @@ export default function TextInterview() {
   const next = () => {
     if (last) submit();
     else setIdx(idx + 1);
+  };
+
+  // ← 추가: 이전 문제로 이동 (타이머는 running 상태에만 묶여있어 idx가 바뀌어도 계속 흐름)
+  const prev = () => {
+    if (idx > 0) setIdx(idx - 1);
   };
 
   const onTimeUpConfirm = () => {
@@ -166,7 +173,14 @@ export default function TextInterview() {
         <div style={{ textAlign: "right", fontSize: 12, color: T.inkFaint, marginTop: 6 }}>
           {answers[idx].length}자
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 18 }}>
+
+        {/* ← 버튼 영역: flex-end → space-between으로 변경, 일반 면접일 때만 왼쪽에 "이전으로" 노출 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
+          {!isPressure ? (
+            <Btn variant="outline" onClick={prev} disabled={idx === 0}>
+              이전으로
+            </Btn>
+          ) : <span />}
           <Btn variant={last ? "accent" : "primary"} onClick={next}>
             {last ? "제출하기" : "다음"}
           </Btn>
