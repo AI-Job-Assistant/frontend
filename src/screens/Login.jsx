@@ -70,16 +70,6 @@ export default function Login() {
               {busy ? "로그인 중…" : "로그인"}
             </Btn>
             <p style={{ textAlign: "center", fontSize: 13.5, color: T.inkSoft, marginTop: 20 }}>
-              {err && err.includes("올바르지") && (
-                <p style={{ fontSize: 12.5, color: T.inkSoft, margin: "-6px 0 12px" }}>
-                  <span
-                  style={{ color: T.forest, fontWeight: 700, cursor: "pointer" }}
-                  onClick={() => navigate("/forgot-password")}
-                  >
-                    비밀번호를 잊으셨나요?
-                  </span>
-                </p>
-              )}
               아직 계정이 없으신가요?{" "}
               <span style={{ color: T.forest, fontWeight: 700, cursor: "pointer" }} onClick={() => navigate("/signup")}>회원가입</span>
             </p>

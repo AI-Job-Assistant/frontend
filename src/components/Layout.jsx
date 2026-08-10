@@ -36,10 +36,14 @@ export function Centered({ children }) {
   );
 }
 
-export function TopBar({ showMypage = true, onQuit })  {
+export function TopBar({ showMypage = true, onQuit }) {
   const navigate = useNavigate();
   const { studentId, logout } = useApp();
-  const onLogout = async () => { await logout(); navigate("/login"); };
+  const onLogout = async () => {
+    if (!window.confirm("로그아웃 하시겠습니까?")) return;
+    await logout();
+    navigate("/login");
+  };
   return (
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -59,7 +63,7 @@ export function TopBar({ showMypage = true, onQuit })  {
             <Icon.user size={17} /> 마이페이지
           </Btn>
         )}
-        <Btn variant="ghost" style={{ padding: "8px 12px", color: T.inkSoft }} onClick={onLogout} aria-label="로그아웃">
+        <Btn variant="ghost" style={{ padding: "8px 12px", color: T.inkSoft }} onClick={onLogout} aria-label="로그아웃" title="로그아웃">
           <Icon.logout size={17} />
         </Btn>
       </div>

@@ -14,7 +14,6 @@ const SpeakInterview = lazy(() => import("./screens/SpeakInterview"));
 const Loading = lazy(() => import("./screens/Loading"));
 const Result = lazy(() => import("./screens/Result"));
 const Mypage = lazy(() => import("./screens/Mypage"));
-const ForgotPassword = lazy(() => import("./screens/ForgotPassword"));
 const TransitionLoading = lazy(() => import("./screens/TransitionLoading"));
 
 /* 로딩 중 보여줄 화면 */
@@ -44,7 +43,6 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/" element={<Protected><Main /></Protected>} />
             <Route path="/setup" element={<Protected><Setup /></Protected>} />
             <Route path="/interview/text" element={<Protected><TextInterview /></Protected>} />

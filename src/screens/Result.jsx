@@ -15,20 +15,32 @@ function stageFor(score) {
   return 0;
 }
 
+// ponytail: 재분석 시 백엔드가 같은 questionId로 새 결과를 append함(덮어쓰기 아님) → 문항 수·총점 부풀림 방지용 중복 제거. 백엔드가 update로 고쳐지면 제거
+function dedupeByQuestion(results) {
+  const byId = new Map();
+  results.forEach((r, idx) => {
+    byId.set(r.questionId ?? `__idx_${idx}`, r);
+  });
+  return [...byId.values()];
+}
+
 function normalize(results) {
   if (!results || results.length === 0) {
     return { score: 0, perQ: [] };
   }
 
-  const perQ = results.map((r) => {
+  const deduped = dedupeByQuestion(results);
+
+  const perQ = deduped.map((r) => {
     const noAnswer = !r.answer;
 
     const strengths = Array.isArray(r.strengths) ? r.strengths : [r.strengths].filter(Boolean);
     const improvements = Array.isArray(r.improvements) ? r.improvements : [r.improvements].filter(Boolean);
 
-    // AI 분석 실패 여부 감지 (강점/개선점/추천답변 문구에 "분석...실패"가 포함되면 실패로 간주)
-    const failText = [...strengths, ...improvements, r.suggestion].filter(Boolean).join(" ");
-    const analysisFailed = /분석.*실패/.test(failText);
+    // AI 분석 실패 여부 감지 (백엔드가 실패 시 보내는 고정 문구만 정확히 매칭 — 느슨한 키워드 매칭은 정상 답변 오탐 유발)
+    const FAIL_PHRASES = ["분석에 실패", "일시적으로 지연되었습니다", "일시적인 오류로"];
+    const failText = [...strengths, ...improvements, r.suggestion, r.modelAnswer].filter(Boolean).join(" ");
+    const analysisFailed = FAIL_PHRASES.some((phrase) => failText.includes(phrase));
 
     return {
       questionId: r.questionId, // ← 재분석 요청 시 필요
@@ -89,7 +101,7 @@ export default function Result() {
 
   const data = normalize(results);
 
-  // ← 추가: 분석 실패한 문항 재요청
+  // 분석 실패한 문항 재요청
   const retryAnalysis = async (i) => {
     const p = data.perQ[i];
     setRefreshingIdx(i);
@@ -106,6 +118,7 @@ export default function Result() {
         next[i] = { ...next[i], ...updated };
         return next;
       });
+      if (sessionId) await completeInterview(sessionId).catch(() => { });
     } catch (e) {
       console.warn("[Result] 재분석 실패:", e.message);
     } finally {
@@ -216,6 +229,20 @@ export default function Result() {
                 <span style={{ fontSize: 14, fontWeight: 700, color: T.forest, fontVariantNumeric: "tabular-nums" }}>
                   {p.score}점<span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 400 }}>/{session?.mode === "도전" ? 100 : 20}</span>
                 </span>
+                {p.analysisFailed && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); retryAnalysis(i); }}
+                    disabled={refreshingIdx === i}
+                    title="다시 분석하기"
+                    style={{
+                      display: "grid", placeItems: "center", padding: 4, border: "none",
+                      background: "transparent", color: T.forest, cursor: refreshingIdx === i ? "default" : "pointer",
+                      animation: refreshingIdx === i ? "spin 1s linear infinite" : "none",
+                    }}
+                  >
+                    <Icon.refresh size={15} />
+                  </button>
+                )}
                 <span style={{ color: T.inkFaint, fontSize: 12 }}>{open === i ? "▲" : "▼"}</span>
               </div>
             </button>
@@ -234,7 +261,7 @@ export default function Result() {
                   <div style={{
                     padding: "8px 12px", borderRadius: 8, marginBottom: 8,
                     background: "rgba(181,80,58,0.08)",
-                    fontSize: 13, color: "#B5503A", fontWeight: 600,
+                    fontSize: 13, color: "#92531F", fontWeight: 600,
                   }}>
                     ⏱ 시간 초과 감점: {extraCount[i]}회 (-{extraCount[i] * 3}점)
                   </div>
@@ -244,8 +271,7 @@ export default function Result() {
                 {p.analysisFailed ? (
                   <div style={{
                     marginTop: 12, padding: 16, borderRadius: 10,
-                    background: "rgba(181,80,58,0.06)",
-                    border: "1px solid rgba(181,80,58,0.2)",
+                    background: "rgba(181,80,58,0.08)",
                     textAlign: "center",
                   }}>
                     <p style={{ fontSize: 13.5, color: "#B5503A", fontWeight: 600, margin: "0 0 10px" }}>
@@ -256,7 +282,7 @@ export default function Result() {
                       onClick={() => retryAnalysis(i)}
                       disabled={refreshingIdx === i}
                     >
-                      {refreshingIdx === i ? "다시 분석하는 중…" : "🔄 다시 분석하기"}
+                      {refreshingIdx === i ? "다시 분석하는 중…" : "다시 분석하기"}
                     </Btn>
                   </div>
                 ) : (
@@ -303,19 +329,20 @@ export default function Result() {
         </Btn>
         <div style={{ display: "flex", gap: 10 }}>
           <Btn variant="outline" onClick={async () => {
-            if (sessionId) await completeInterview(sessionId).catch(() => {});
+            if (sessionId) await completeInterview(sessionId).catch(() => { });
             navigate("/mypage");
           }}>
             <Icon.chart size={17} /> 성장 기록
           </Btn>
           <Btn variant="primary" onClick={async () => {
-            if (sessionId) await completeInterview(sessionId).catch(() => {});
+            if (sessionId) await completeInterview(sessionId).catch(() => { });
             navigate("/");
           }}>
             새 면접
           </Btn>
         </div>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </Shell>
   );
 }

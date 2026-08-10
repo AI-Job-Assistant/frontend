@@ -6,6 +6,7 @@ import { Card, Eyebrow } from "../components/UI";
 import { Shell, TopBar, ConfirmModal } from "../components/Layout";
 import { useApp } from "../AppContext";
 import { getStats, getHistory, getHeatmap, getAnalysis, completeInterview, updateGoal } from "../api";
+import sun from "../assets/sun.png";
 
 /* 잔디(달력) 색 단계 — "면접 횟수" 기준 */
 function band(count) {
@@ -67,7 +68,7 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const MODE_STYLE = {
   텍스트: { bg: T.mist, color: T.forest },
   스피킹: { bg: "#EAF0E3", color: "#4C6B3E" },
-  도전:   { bg: T.amberSoft, color: T.amber },
+  도전: { bg: T.amberSoft, color: T.amber },
 };
 
 function ModeBadge({ mode }) {
@@ -105,22 +106,22 @@ export default function Mypage() {
   useEffect(() => {
     // ① 빠른 데이터: stats + history — DB 조회라 거의 즉시 옴
     async function loadFast() {
-  try {
-    const [statsData, historyData, heatmapRes] = await Promise.all([
-      getStats().catch(() => null),
-      getHistory().catch(() => []),
-      getHeatmap().catch(() => null),   // ← 추가
-    ]);
-    setStats(statsData);
-    setHistory(historyData);
-    setGoal(statsData?.goal ?? null);
-    setHeatmapData(heatmapRes);         // ← 추가
-  } catch (e) {
-    console.error("[Mypage] 빠른 데이터 로딩 실패:", e);
-  } finally {
-    setLoading(false);
-  }
-}
+      try {
+        const [statsData, historyData, heatmapRes] = await Promise.all([
+          getStats().catch(() => null),
+          getHistory().catch(() => []),
+          getHeatmap().catch(() => null),   // ← 추가
+        ]);
+        setStats(statsData);
+        setHistory(historyData);
+        setGoal(statsData?.goal ?? null);
+        setHeatmapData(heatmapRes);         // ← 추가
+      } catch (e) {
+        console.error("[Mypage] 빠른 데이터 로딩 실패:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
 
     // ② 느린 데이터: AI 분석 — 얘만 따로 돌아서 페이지 전체를 막지 않음
     async function loadAnalysis() {
@@ -139,43 +140,45 @@ export default function Mypage() {
     loadAnalysis();
   }, []);
 
-const onComplete = async () => {
-  if (!selectedSessionId) return;
-  try {
-    await completeInterview(selectedSessionId);
-    // stats/history는 바로 반영
-    const [statsData, historyData] = await Promise.all([getStats(), getHistory()]);
-    setStats(statsData);
-    setHistory(historyData);
-    // AI 분석은 느릴 수 있으니 카드만 다시 로딩 상태로
-    setAnalysisLoading(true);
-    setIsRefreshingAnalysis(true);
-    getAnalysis()
-      .then(setAnalysis)
-      .catch(() => setAnalysis(null))
-      .finally(() => {
-        setAnalysisLoading(false);
-        setIsRefreshingAnalysis(false);
-      });
-  } catch (e) {
-    console.error("완료 처리 실패:", e);
-  } finally {
-    setShowCompleteConfirm(false);
-    setSelectedSessionId(null);
-  }};
+  const onComplete = async () => {
+    if (!selectedSessionId) return;
+    try {
+      await completeInterview(selectedSessionId);
+      // stats/history는 바로 반영
+      const [statsData, historyData] = await Promise.all([getStats(), getHistory()]);
+      setStats(statsData);
+      setHistory(historyData);
+      // AI 분석은 느릴 수 있으니 카드만 다시 로딩 상태로
+      setAnalysisLoading(true);
+      setIsRefreshingAnalysis(true);
+      getAnalysis()
+        .then(setAnalysis)
+        .catch(() => setAnalysis(null))
+        .finally(() => {
+          setAnalysisLoading(false);
+          setIsRefreshingAnalysis(false);
+        });
+    } catch (e) {
+      console.error("완료 처리 실패:", e);
+    } finally {
+      setShowCompleteConfirm(false);
+      setSelectedSessionId(null);
+    }
+  };
   const handleGoalSave = async () => {
-  const trimmed = goalInput.trim();
-  if (!trimmed) return;
-  setGoalSaving(true);
-  try {
-    const res = await updateGoal(trimmed);
-    setGoal(res.goal);
-    setIsEditingGoal(false);
-  } catch (e) {
-    console.error("목표 저장 실패:", e);
-  } finally {
-    setGoalSaving(false);
-  }};
+    const trimmed = goalInput.trim();
+    if (!trimmed) return;
+    setGoalSaving(true);
+    try {
+      const res = await updateGoal(trimmed);
+      setGoal(res.goal);
+      setIsEditingGoal(false);
+    } catch (e) {
+      console.error("목표 저장 실패:", e);
+    } finally {
+      setGoalSaving(false);
+    }
+  };
 
 
   if (loading) {
@@ -244,13 +247,13 @@ const onComplete = async () => {
     <Shell>
       <TopBar showMypage={false} />
       <ConfirmModal
-      open={showCompleteConfirm}
-      title="성장기록에 추가하기"
-      desc="이 면접 기록을 완료로 변경하고 총 횟수와 평균 점수에 반영할까요?"
-      onConfirm={onComplete}
-      onCancel={() => { setShowCompleteConfirm(false); setSelectedSessionId(null); }}
-      confirmText="추가하기"
-      cancelText="취소"
+        open={showCompleteConfirm}
+        title="성장기록에 추가하기"
+        desc="이 면접 기록을 완료로 변경하고 총 횟수와 평균 점수에 반영할까요?"
+        onConfirm={onComplete}
+        onCancel={() => { setShowCompleteConfirm(false); setSelectedSessionId(null); }}
+        confirmText="추가하기"
+        cancelText="취소"
       />
 
       {/* 헤더 — 프로필 (연습 횟수 기준 성장 이미지 + 점수 기준 배지 색상) */}
@@ -277,58 +280,63 @@ const onComplete = async () => {
         {isEditingGoal ? (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
-            autoFocus
-            value={goalInput}
-            onChange={(e) => setGoalInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleGoalSave()}
-            placeholder="예: 백엔드 개발자 취업"
-            maxLength={100}
-            style={{
-              flex: 1, fontSize: 14.5, fontWeight: 600, color: T.ink,
-              border: `1px solid ${T.line}`, borderRadius: 8,
-              padding: "8px 12px", fontFamily: "inherit", outline: "none",
-            }}
-          />
-          <button
-          onClick={handleGoalSave}
-          disabled={goalSaving}
-          style={{
-            fontSize: 13, fontWeight: 700, color: "#fff", background: T.forest,
-            border: "none", borderRadius: 8, padding: "8px 14px",
-            cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-          }}
-        >
-          {goalSaving ? "저장 중..." : "저장"}
-        </button>
-        <button
-        onClick={() => { setIsEditingGoal(false); setGoalInput(goal || ""); }}
-        style={{
-          fontSize: 13, fontWeight: 600, color: T.inkSoft, background: "transparent",
-          border: "none", cursor: "pointer", fontFamily: "inherit", padding: "8px 6px",
-        }}
-      >
-        취소
-      </button>
-    </div>
-  ) : (
-    <div
-      onClick={() => { setGoalInput(goal || ""); setIsEditingGoal(true); }}
-      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
-    >
-      <div>
-        <div style={{ fontSize: 11.5, fontWeight: 700, color: T.forest, marginBottom: 3, letterSpacing: "0.02em" }}>
-          🎯 목표
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: goal ? T.ink : T.inkFaint }}>
-          {goal || "목표를 설정해보세요"}
-        </div>
-      </div>
-      <span style={{ fontSize: 11.5, color: T.inkSoft, whiteSpace: "nowrap" }}>
-        언제든 수정 가능
-      </span>
-    </div>
-  )}
-</Card>
+              autoFocus
+              value={goalInput}
+              onChange={(e) => setGoalInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleGoalSave()}
+              placeholder="예: 백엔드 개발자 취업"
+              maxLength={100}
+              style={{
+                flex: 1, fontSize: 14.5, fontWeight: 600, color: T.ink,
+                border: `1px solid ${T.line}`, borderRadius: 8,
+                padding: "8px 12px", fontFamily: "inherit", outline: "none",
+              }}
+            />
+            <button
+              onClick={handleGoalSave}
+              disabled={goalSaving}
+              style={{
+                fontSize: 13, fontWeight: 700, color: "#fff", background: T.forest,
+                border: "none", borderRadius: 8, padding: "8px 14px",
+                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+              }}
+            >
+              {goalSaving ? "저장 중..." : "저장"}
+            </button>
+            <button
+              onClick={() => { setIsEditingGoal(false); setGoalInput(goal || ""); }}
+              style={{
+                fontSize: 13, fontWeight: 600, color: T.inkSoft, background: "transparent",
+                border: "none", cursor: "pointer", fontFamily: "inherit", padding: "8px 6px",
+              }}
+            >
+              취소
+            </button>
+          </div>
+        ) : (
+          <div
+            onClick={() => { setGoalInput(goal || ""); setIsEditingGoal(true); }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+          >
+            <div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: T.forest, marginBottom: 3, letterSpacing: "0.02em" }}>
+                <img
+                  src={sun}
+                  alt="목표"
+                  style={{ width: 50, height: 50, verticalAlign: 'middle', marginRight: 4 }}
+                />
+                목표
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: goal ? T.ink : T.inkFaint }}>
+                {goal || "목표를 설정해보세요"}
+              </div>
+            </div>
+            <span style={{ fontSize: 11.5, color: T.inkSoft, whiteSpace: "nowrap" }}>
+              언제든 수정 가능
+            </span>
+          </div>
+        )}
+      </Card>
 
       {/* 통계 3칸 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }} className="stat-grid">
@@ -427,27 +435,27 @@ const onComplete = async () => {
                   {h.jobName} · {h.questionType}
                   {h.isIncomplete && (
                     <>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: "#B5503A",
-                      background: "rgba(181,80,58,0.1)", padding: "2px 8px",
-                      borderRadius: 20, letterSpacing: "0.02em",
-                    }}>미완료</span>
-                    <button
-                     onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedSessionId(h.id);
-                      setShowCompleteConfirm(true);
-                    }}
-                    style={{
-                      fontSize: 11, fontWeight: 700, color: T.forest,
-                      background: T.mist, padding: "2px 8px",
-                      borderRadius: 20, border: "none", cursor: "pointer", 
-                      fontFamily: "inherit",
-                      }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: "#B5503A",
+                        background: "rgba(181,80,58,0.1)", padding: "2px 8px",
+                        borderRadius: 20, letterSpacing: "0.02em",
+                      }}>미완료</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSessionId(h.id);
+                          setShowCompleteConfirm(true);
+                        }}
+                        style={{
+                          fontSize: 11, fontWeight: 700, color: T.forest,
+                          background: T.mist, padding: "2px 8px",
+                          borderRadius: 20, border: "none", cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}>
                         성장기록에 추가하기
-                    </button>
+                      </button>
                     </>
-                    )}
+                  )}
                 </div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>
                   {h.createdAt ? new Date(h.createdAt).toLocaleDateString("ko-KR") : "날짜 없음"} · {h.durationMin != null ? `${h.durationMin}분` : "기록 없음"}
@@ -482,46 +490,51 @@ const onComplete = async () => {
 
 
       {/* AI 강점·약점 분석 */}
-<Card style={{ padding: 24, marginTop: 16 }}>
-  <div style={{ marginBottom: 14 }}>
-    <Eyebrow>AI Analysis</Eyebrow>
-    <h3 style={{ fontSize: 16, fontWeight: 700, color: T.ink, margin: "3px 0 0", letterSpacing: "-0.01em" }}>강점 · 약점 분석</h3>
-  </div>
+      <Card style={{ padding: 24, marginTop: 16 }}>
+        <div style={{ marginBottom: 14 }}>
+          <Eyebrow>AI Analysis</Eyebrow>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: T.ink, margin: "3px 0 0", letterSpacing: "-0.01em" }}>강점 · 약점 분석</h3>
+        </div>
 
-  {analysisLoading ? (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 0 8px" }}>
-      <div className="sprout-grow">
-        <Sprout size={56} />
-      </div>
-      <p style={{ fontSize: 13.5, fontWeight: 600, color: T.forest, marginTop: 16 }}>
-        {isRefreshingAnalysis
-          ? "🔄 최신 면접 기록을 반영해서 분석하고 있어요..."
-          : "🔄 분석 중..."}
-      </p>
-    </div>
-  ) : !analysis?.hasData ? (
-    <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
-  ) : (
-    <>
-      <p style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>{analysis.basedOn}회 면접 기반 분석</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-        <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8 }}>💪 대표 강점</div>
-          {analysis.topStrengths?.map((s, i) => (
-            <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {s}</div>
-          ))}
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: 10, background: T.amberSoft }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 8 }}>🎯 보완할 점</div>
-          {analysis.topWeaknesses?.map((w, i) => (
-            <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {w}</div>
-          ))}
-        </div>
-      </div>
-      <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
-    </>
-  )}
-</Card>
+        {analysisLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 0 8px" }}>
+            <div className="sprout-grow">
+              <Sprout size={56} />
+            </div>
+            <p style={{ fontSize: 13.5, fontWeight: 600, color: T.forest, marginTop: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="spin" style={{ display: "grid", placeItems: "center" }}><Icon.refresh size={15} /></span>
+              {isRefreshingAnalysis
+                ? "최신 면접 기록을 반영해서 분석하고 있어요..."
+                : "분석 중..."}
+            </p>
+          </div>
+        ) : !analysis?.hasData ? (
+          <p style={{ color: T.inkSoft, fontSize: 13.5 }}>{analysis?.message || "아직 분석할 면접 기록이 없어요."}</p>
+        ) : (
+          <>
+            <p style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>{analysis.basedOn}회 면접 기반 분석</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.mist }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                  <Icon.check size={14} /> 대표 강점
+                </div>
+                {analysis.topStrengths?.map((s, i) => (
+                  <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {s}</div>
+                ))}
+              </div>
+              <div style={{ padding: "14px 16px", borderRadius: 10, background: T.amberSoft }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                  <Icon.target size={14} /> 보완할 점
+                </div>
+                {analysis.topWeaknesses?.map((w, i) => (
+                  <div key={i} style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.6 }}>· {w}</div>
+                ))}
+              </div>
+            </div>
+            <p style={{ fontSize: 13.5, color: T.inkMid, lineHeight: 1.7, margin: 0 }}>{analysis.summary}</p>
+          </>
+        )}
+      </Card>
       <style>{`
         @media (max-width:560px){
           .stat-grid{ grid-template-columns:1fr 1fr !important; }
@@ -529,8 +542,11 @@ const onComplete = async () => {
         }
         .sprout-grow { animation: grow 1.6s ease-in-out infinite; transform-origin: bottom; }
         @keyframes grow { 0%,100%{ transform: scale(.96) } 50%{ transform: scale(1.04) } }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce){
         .sprout-grow{ animation: none }
+        .spin{ animation: none }
         }
       `}</style>
     </Shell>

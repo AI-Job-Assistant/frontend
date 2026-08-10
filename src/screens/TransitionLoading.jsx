@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { T } from "../styles/tokens";
 import { Sprout } from "../components/Characters";
 import { Centered } from "../components/Layout";
+import { motion } from 'framer-motion';
+import beeIcon from '../assets/beeIcon.png';
 
 export default function TransitionLoading() {
   const navigate = useNavigate();
@@ -18,20 +20,28 @@ export default function TransitionLoading() {
 
   return (
     <Centered>
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <div className="sprout-grow">
+      <div style={{ position: "relative", height: 140, width: 280, margin: "0 auto" }}>
+        <motion.img
+          src={beeIcon}
+          alt="bee"
+          style={{ width: 28, height: 28, position: "absolute", top: -10, left: 110 }}
+          animate={{
+            x: [0, 10, 20, 30, 40, 50, 60, 70, 80],
+            y: [15, -15, 15, -15, 15, -15, 15, -15, 15],
+            rotate: [-30, 30, -30, 30, -30, 30, -30, 30, -30],
+          }}
+          transition={{
+            duration: 1.6,
+            repeat: Infinity,
+            ease: "linear",
+            times: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
+          }}
+        />
+        <div className="sprout-grow" style={{ position: "absolute", top: 30, left: "50%", transform: "translateX(-50%)" }}>
           <Sprout size={84} />
         </div>
-        <div style={{
-          position: "absolute", top: "100%", left: "50%",
-          transform: "translateX(-50%)", width: 260,
-          marginTop: 22,
-        }}>
-          <p style={{ fontSize: 17, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em", margin: 0 }}>
-            {message}
-          </p>
-        </div>
       </div>
+
       <style>{`
         .sprout-grow { animation: grow 1.6s ease-in-out infinite; transform-origin: bottom; }
         @keyframes grow { 0%,100%{ transform: scale(.96) } 50%{ transform: scale(1.04) } }

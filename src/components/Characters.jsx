@@ -70,4 +70,5 @@ export const Icon = {
   cam: (p) => <svg viewBox="0 0 24 24" width={p.size||20} height={p.size||20} {...ic}><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>,
   chart: (p) => <svg viewBox="0 0 24 24" width={p.size||20} height={p.size||20} {...ic}><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-7"/></svg>,
   target: (p) => <svg viewBox="0 0 24 24" width={p.size||20} height={p.size||20} {...ic}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5"/></svg>,
+  refresh: (p) => <svg viewBox="0 0 24 24" width={p.size||20} height={p.size||20} {...ic}><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M4 3v5h5M20 21v-5h-5"/></svg>,
 };
