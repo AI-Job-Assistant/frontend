@@ -62,7 +62,7 @@ export default function ForgotPassword() {
               />
               {err && <p style={{ color: "#B5503A", fontSize: 12.5, margin: "-6px 0 12px" }}>{err}</p>}
               <Btn variant="primary" full disabled={busy} onClick={onSubmit}>
-                {busy ? "전송 중…" : "비밀번호 재설정 이메일 보내기"}
+                {busy ? "전송 중…" : "이메일 보내기"}
               </Btn>
               <p style={{ textAlign: "center", fontSize: 13.5, color: T.inkSoft, marginTop: 20 }}>
                 <span style={{ color: T.forest, fontWeight: 700, cursor: "pointer" }} onClick={() => navigate("/login")}>
