@@ -40,7 +40,9 @@ function normalize(results) {
     // AI 분석 실패 여부 감지 (백엔드가 실패 시 보내는 고정 문구만 정확히 매칭 — 느슨한 키워드 매칭은 정상 답변 오탐 유발)
     const FAIL_PHRASES = ["분석에 실패", "일시적으로 지연되었습니다", "일시적인 오류로"];
     const failText = [...strengths, ...improvements, r.suggestion, r.modelAnswer].filter(Boolean).join(" ");
-    const analysisFailed = FAIL_PHRASES.some((phrase) => failText.includes(phrase));
+    // 답변은 제출했는데 개선할 점/추천 답변/모범 답안 중 하나라도 안 나온 경우도 분석 실패로 간주
+    const missingFeedback = !noAnswer && (improvements.length === 0 || !r.suggestion || !r.modelAnswer);
+    const analysisFailed = FAIL_PHRASES.some((phrase) => failText.includes(phrase)) || missingFeedback;
 
     return {
       questionId: r.questionId, // ← 재분석 요청 시 필요

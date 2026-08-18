@@ -27,7 +27,7 @@ export default function Signup() {
 
   const onSignup = async () => {
     if (!ok) return;
-    if (f.pw.length < 8) { setErr("비밀번호는 6자 이상이어야 해요."); return; }
+    if (f.pw.length < 8) { setErr("비밀번호는 8자 이상이어야 해요."); return; }
     setErr(""); setBusy(true);
     try {
       const result = await signUp({ studentId: f.id, password: f.pw, name: f.name, email: f.email, departmentId: f.dept });
