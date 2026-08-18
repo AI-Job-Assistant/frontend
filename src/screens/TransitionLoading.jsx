@@ -20,26 +20,34 @@ export default function TransitionLoading() {
 
   return (
     <Centered>
-      <div style={{ position: "relative", height: 140, width: 280, margin: "0 auto" }}>
-        <motion.img
-          src={beeIcon}
-          alt="bee"
-          style={{ width: 28, height: 28, position: "absolute", top: -10, left: 110 }}
-          animate={{
-            x: [0, 10, 20, 30, 40, 50, 60, 70, 80],
-            y: [15, -15, 15, -15, 15, -15, 15, -15, 15],
-            rotate: [-30, 30, -30, 30, -30, 30, -30, 30, -30],
-          }}
-          transition={{
-            duration: 1.6,
-            repeat: Infinity,
-            ease: "linear",
-            times: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-          }}
-        />
-        <div className="sprout-grow" style={{ position: "absolute", top: 30, left: "50%", transform: "translateX(-50%)" }}>
-          <Sprout size={84} />
+      <div style={{ textAlign: "center" }}>
+        <div style={{ position: "relative", height: 140, width: 280, margin: "0 auto" }}>
+          <motion.img
+            src={beeIcon}
+            alt="bee"
+            style={{ width: 28, height: 28, position: "absolute", top: -10, left: 110 }}
+            animate={{
+              x: [0, 10, 20, 30, 40, 50, 60, 70, 80],
+              y: [15, -15, 15, -15, 15, -15, 15, -15, 15],
+              rotate: [-30, 30, -30, 30, -30, 30, -30, 30, -30],
+            }}
+            transition={{
+              duration: 1.6,
+              repeat: Infinity,
+              ease: "linear",
+              times: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
+            }}
+          />
+          <div className="sprout-grow" style={{ position: "absolute", top: 30, left: "50%", transform: "translateX(-50%)" }}>
+            <Sprout size={84} />
+          </div>
         </div>
+        <p style={{
+          fontSize: 16, fontWeight: 700, color: T.ink,
+          letterSpacing: "-0.01em", margin: "22px 0 0",
+        }}>
+          {message}
+        </p>
       </div>
 
       <style>{`
